@@ -143,7 +143,7 @@ func (m *Model) applyFileWindowLoaded(recs []domain.Record, firstLine int64) {
 	m.syncSeqFromIdx(fidx)
 }
 
-// statusLineTotal returns the denominator for the "lines:N/M" status strip.
+// statusLineTotal returns the "lines:N" status strip value (total line count).
 //
 // Resolution order (docs/plans/stdin-fileprovider-unify-plan.md, Phase 2):
 //  1. File-partial mode with a known line count — authoritative, comes from [applyFileIndexReady].
@@ -451,7 +451,11 @@ func (m *Model) cmdStartLazySearch(dir int, fidx []int) tea.Cmd {
 
 func (m *Model) cmdScanSearchInFile(dir int, startSeq int64, scanned int64, confirmed bool) tea.Cmd {
 	prov := m.windowProviderOrFallback()
-	if !m.filePartial || prov == nil || prov.TotalLines() == 0 || strings.TrimSpace(m.searchBuf) == "" {
+	if prov == nil || prov.TotalLines() == 0 || strings.TrimSpace(m.searchBuf) == "" {
+		return nil
+	}
+	// Must be a disk-capable provider: filePartial with offsets, or stdin with --out fallback.
+	if !m.canLazySearch() {
 		return nil
 	}
 	total := prov.TotalLines()
@@ -532,7 +536,7 @@ func (m *Model) cmdScanSearchInFile(dir int, startSeq int64, scanned int64, conf
 
 func (m *Model) cmdFindFilterMatchForwardFromWindowEnd() tea.Cmd {
 	prov := m.windowProviderOrFallback()
-	if !m.filePartial || prov == nil || prov.TotalLines() == 0 || m.prog.Empty() {
+	if !m.canLazySearch() || prov == nil || prov.TotalLines() == 0 || m.prog.Empty() {
 		return nil
 	}
 	total := prov.TotalLines()
@@ -564,7 +568,7 @@ func (m *Model) cmdFindFilterMatchForwardFromWindowEnd() tea.Cmd {
 
 func (m *Model) cmdFindFilterMatchBackwardFromWindowStart() tea.Cmd {
 	prov := m.windowProviderOrFallback()
-	if !m.filePartial || prov == nil || prov.TotalLines() == 0 || m.prog.Empty() {
+	if !m.canLazySearch() || prov == nil || prov.TotalLines() == 0 || m.prog.Empty() {
 		return nil
 	}
 	vh := m.viewportH()

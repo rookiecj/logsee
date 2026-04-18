@@ -94,6 +94,33 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case stdinScrollbackMsg:
+		if msg.Err != nil {
+			fmt.Fprintf(os.Stderr, "logsee: stdin scrollback: %v\n", msg.Err)
+			return m, nil
+		}
+		m.applyStdinScrollbackLoaded(msg)
+		// Filter active + undersized filtered fidx: chain a topup so the viewport fills
+		// with filter matches (mirror of FileWindowLoadedMsg's topup trigger).
+		if m.stdinScrollback && m.appliedFilter != "" {
+			fidx := m.filteredIndices()
+			if len(fidx) >= m.viewportH() {
+				m.filterTopupActive = false
+			} else {
+				if !m.filterTopupActive {
+					m.filterTopupActive = true
+				}
+				if m.filterTopupDir == 0 {
+					m.filterTopupDir = m.pickFilterTopupDirWhenUndersized()
+				}
+				if cmd := m.cmdFindFilterTopupByDir(); cmd != nil {
+					return m, cmd
+				}
+				m.filterTopupActive = false
+			}
+		}
+		return m, nil
+
 	case FileWindowLoadedMsg:
 		if msg.Err != nil {
 			fmt.Fprintf(os.Stderr, "logsee: file window: %v\n", msg.Err)
@@ -139,10 +166,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.FoundSeq > 0 {
 			vh := m.viewportH()
-			if msg.Direction > 0 {
-				return m, m.cmdLoadFileWindowAroundBottom(msg.FoundSeq, vh)
+			if m.filePartial && len(m.fileOffsets) > 0 {
+				if msg.Direction > 0 {
+					return m, m.cmdLoadFileWindowAroundBottom(msg.FoundSeq, vh)
+				}
+				return m, m.cmdLoadFileWindowAroundTop(msg.FoundSeq, vh)
 			}
-			return m, m.cmdLoadFileWindowAroundTop(msg.FoundSeq, vh)
+			// stdin + disk fallback: load a scrollback window around the found seq.
+			if msg.Direction > 0 {
+				return m, m.cmdLoadStdinScrollbackEndingAt(msg.FoundSeq)
+			}
+			return m, m.cmdLoadStdinScrollbackAt(msg.FoundSeq)
 		}
 		if msg.ReachedEnd {
 			m.copyFlash = "no matching line"
@@ -340,8 +374,9 @@ func (m *Model) applyIncomingLines(texts []string) {
 	}
 	fidxBefore := m.filteredIndices()
 	wasAtTail := m.follow && m.tailAligned(fidxBefore)
-	pushed := 0
+	rsp, _ := m.windowProvider.(*RingStreamProvider)
 	for _, text := range texts {
+		var rotated bool
 		if m.store != nil {
 			if err := m.store.WriteLine(text); err != nil {
 				fmt.Fprintf(os.Stderr, "logsee: write output %q: %v\n", m.outPath, err)
@@ -351,12 +386,25 @@ func (m *Model) applyIncomingLines(texts []string) {
 				fmt.Fprintf(os.Stderr, "logsee: flush output %q: %v\n", m.outPath, err)
 				continue
 			}
+			rotated = m.store.ConsumeRotation()
 		}
-		_ = m.buf.Push(text)
-		pushed++
+		var seq int64
+		switch {
+		case rsp != nil && m.stdinScrollback:
+			seq = rsp.AssignSeq()
+		case rsp != nil:
+			seq = rsp.Push(text).Seq
+		default:
+			seq = m.buf.Push(text).Seq
+		}
+		if rotated && rsp != nil {
+			rsp.NoteRotation(seq)
+		}
 	}
-	if rsp, ok := m.windowProvider.(*RingStreamProvider); ok {
-		rsp.NoteReceived(pushed)
+	if rsp != nil && m.store != nil {
+		if err := rsp.RefreshIndex(m.store.Size()); err != nil {
+			fmt.Fprintf(os.Stderr, "logsee: refresh offset index: %v\n", err)
+		}
 	}
 	fidx := m.filteredIndices()
 	if m.follow && wasAtTail && len(fidx) > 0 {
@@ -377,12 +425,22 @@ func (m *Model) cmdFindFilterTopupByDir() tea.Cmd {
 // pickFilterTopupDirWhenUndersized chooses forward vs backward filter scanning when the in-memory
 // window has fewer matching rows than the viewport. At physical EOF there is nothing to load
 // forward; prefer backward so keys like End/G still fill the filtered view.
+//
+// filePartial uses fileTotalLines; stdin+scrollback reads the provider's cumulative total. Either
+// path flips to backward only when the ring already touches the tail and there is room above.
 func (m *Model) pickFilterTopupDirWhenUndersized() int {
-	if m.buf == nil || m.buf.Len() == 0 || m.fileTotalLines <= 0 {
+	if m.buf == nil || m.buf.Len() == 0 {
+		return +1
+	}
+	total := int64(m.fileTotalLines)
+	if total <= 0 && m.windowProvider != nil {
+		total = m.windowProvider.TotalLines()
+	}
+	if total <= 0 {
 		return +1
 	}
 	lastSeq := m.buf.At(m.buf.Len() - 1).Seq
-	if lastSeq != int64(m.fileTotalLines) {
+	if lastSeq != total {
 		return +1
 	}
 	if m.fileWinFirst <= 1 {
@@ -394,7 +452,7 @@ func (m *Model) pickFilterTopupDirWhenUndersized() int {
 // maybeCmdFilterTopupBackwardAfterForwardSparse schedules a backward file read when a forward
 // filter scan reached EOF (or appended the last chunk) but the viewport still has too few rows.
 func (m *Model) maybeCmdFilterTopupBackwardAfterForwardSparse(fidx []int, scanDirection int) tea.Cmd {
-	if !m.filePartial || !m.filterTopupActive || m.buf == nil || m.appliedFilter == "" {
+	if !m.canLazySearch() || !m.filterTopupActive || m.buf == nil || m.appliedFilter == "" {
 		return nil
 	}
 	vh := m.viewportH()

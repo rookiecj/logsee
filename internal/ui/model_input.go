@@ -195,51 +195,64 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 	case "ctrl+n":
 		m.clearRangeSelection()
 		if m.searchBuf != "" {
-			// filePartial-only: lazy disk scan falls back to the on-disk window when the in-memory
-			// hit list is exhausted. stdin's RingStreamProvider holds only the live ring, so extending
-			// scan past the ring would require a disk-fallback indexer (see
-			// docs/plans/scrollback-disk-fallback.md). Until that lands, stdin uses the in-memory
-			// search path only.
-			if m.filePartial && len(m.fileOffsets) > 0 {
-				prev := m.cursorIdx
-				m.gotoNextSearchHit(fidx)
-				if m.cursorIdx != prev {
-					return true, nil
-				}
+			// Ring-local scan first; if exhausted, fall back to disk scan. The filePartial path
+			// uses its on-disk window; stdin falls back via RingStreamProvider when the --out file
+			// is indexed (see docs/plans/scrollback-disk-fallback.md).
+			prev := m.cursorIdx
+			m.gotoNextSearchHit(fidx)
+			if m.cursorIdx != prev {
+				return true, nil
+			}
+			if m.canLazySearch() {
 				return true, m.cmdStartLazySearch(+1, fidx)
 			}
-			m.gotoNextSearchHit(fidx)
 		}
 		return true, nil
 	case "ctrl+p":
 		m.clearRangeSelection()
 		if m.searchBuf != "" {
-			// See ctrl+n above — stdin lazy search deferred to scrollback-disk-fallback.
-			if m.filePartial && len(m.fileOffsets) > 0 {
-				prev := m.cursorIdx
-				m.gotoPrevSearchHit(fidx)
-				if m.cursorIdx != prev {
-					return true, nil
-				}
+			prev := m.cursorIdx
+			m.gotoPrevSearchHit(fidx)
+			if m.cursorIdx != prev {
+				return true, nil
+			}
+			if m.canLazySearch() {
 				return true, m.cmdStartLazySearch(-1, fidx)
 			}
-			m.gotoPrevSearchHit(fidx)
 		}
 		return true, nil
 	case "up":
 		prev := m.cursorIdx
 		m.navVertical(fidx, -1, false)
-		return true, m.maybeFileLoadAfterNavUp(fidx, prev)
+		if cmd := m.maybeFileLoadAfterNavUp(fidx, prev); cmd != nil {
+			return true, cmd
+		}
+		// Stdin scrollback: ↑ at the top row loads the previous window.
+		if prev == 0 && m.cursorIdx == 0 {
+			return true, m.maybeStdinScrollbackLoadPrev(fidx, 1)
+		}
+		return true, nil
 	case "down":
 		prev := m.cursorIdx
 		m.navVertical(fidx, +1, false)
-		return true, m.maybeFileLoadAfterNavDown(fidx, prev)
+		if cmd := m.maybeFileLoadAfterNavDown(fidx, prev); cmd != nil {
+			return true, cmd
+		}
+		// Stdin scrollback: ↓ at the bottom row loads the next window.
+		last := len(fidx) - 1
+		if last >= 0 && prev == last && m.cursorIdx == last {
+			return true, m.maybeStdinScrollbackLoadNext(fidx, 1)
+		}
+		return true, nil
 	case "pgup", "ctrl+b":
 		m.clearRangeSelection()
 		m.follow = false
 		m.pageUpTopAnchorFirst(fidx, vh)
 		m.syncScrollToCursor(fidx)
-		return true, m.maybeFileLoadAfterPageUp(fidx, vh)
+		if cmd := m.maybeFileLoadAfterPageUp(fidx, vh); cmd != nil {
+			return true, cmd
+		}
+		return true, m.maybeStdinScrollbackLoadPrev(fidx, vh)
 	case "pgdown", "ctrl+f":
 		prev := m.cursorIdx
 		m.clearRangeSelection()
@@ -257,16 +270,22 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 		if m.tailAligned(fidx) {
 			m.follow = true
 		}
-		cmd := m.maybeFileLoadAfterPageDown(fidx, prev, vh)
-		return true, cmd
+		if cmd := m.maybeFileLoadAfterPageDown(fidx, prev, vh); cmd != nil {
+			return true, cmd
+		}
+		return true, m.maybeStdinScrollbackLoadNext(fidx, vh)
 	case "home":
 		m.clearRangeSelection()
 		m.follow = false
-		// filePartial-only: jump to absolute file line 1 via a disk window load. In stdin mode,
-		// Home means "top of the live ring" — which the idx=0 path below already covers. Lines
-		// evicted from the ring cannot be recovered until the scrollback disk-fallback ships.
 		if m.filePartial && len(m.fileOffsets) > 0 {
 			return true, m.cmdLoadFileWindowStartingAt(1)
+		}
+		// Stdin disk-fallback: jump to the earliest reachable seq by loading a historical window
+		// from --out. Entering scrollback mode freezes ring pushes so the loaded window is stable.
+		if rsp, ok := m.windowProvider.(*RingStreamProvider); ok && rsp.HasDiskFallback() {
+			if cmd := m.cmdLoadStdinScrollbackAt(rsp.Horizon()); cmd != nil {
+				return true, cmd
+			}
 		}
 		m.cursorIdx = 0
 		m.syncScrollToCursor(fidx)
@@ -274,10 +293,14 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 	case "end":
 		m.clearRangeSelection()
 		m.follow = true
-		// filePartial-only: load the window around the last file line. In stdin mode, End pins to
-		// the live ring tail (latest received line); the idx path below does exactly that.
 		if m.filePartial && len(m.fileOffsets) > 0 && m.fileTotalLines > 0 {
 			return true, m.cmdLoadFileWindowAroundBottom(int64(m.fileTotalLines), vh)
+		}
+		// Exit stdin scrollback: reload the live tail and resume follow-mode pushes.
+		if m.stdinScrollback {
+			if cmd := m.cmdExitStdinScrollback(); cmd != nil {
+				return true, cmd
+			}
 		}
 		if len(fidx) > 0 {
 			m.cursorIdx = len(fidx) - 1

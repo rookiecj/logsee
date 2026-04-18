@@ -28,6 +28,27 @@ func (r *Ring) Push(text string) domain.Record {
 	return rec
 }
 
+// AdvanceSeq increments the sequence counter without appending to the ring.
+// Used by stdin scrollback mode where new lines persist to disk and bump the
+// seq counter but must not disturb the historical window shown in the ring.
+func (r *Ring) AdvanceSeq() int64 {
+	r.nextSeq++
+	return r.nextSeq
+}
+
+// NextSeq returns the last assigned sequence number (0 before the first Push).
+func (r *Ring) NextSeq() int64 { return r.nextSeq }
+
+// SetNextSeq overrides the sequence counter. Callers use this to preserve seq
+// continuity across a [Ring.ReplaceRecords] call when the replacement window
+// does not include the live tail (stdin scrollback view).
+func (r *Ring) SetNextSeq(seq int64) {
+	if seq < 0 {
+		seq = 0
+	}
+	r.nextSeq = seq
+}
+
 // Len returns the number of stored lines.
 func (r *Ring) Len() int {
 	return len(r.lines)

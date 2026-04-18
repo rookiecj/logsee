@@ -1,4 +1,6 @@
-# stdin scrollback 디스크 fallback (후속 과제)
+# stdin scrollback 디스크 fallback
+
+> **상태**: 구현 완료 (2026-04-19). 기본 동작은 `--out-max-bytes=0` (단일 파일) 이며, 회전 활성화 시에도 "회전 이후 seq 범위" 에 한해 scrollback 을 제공한다.
 
 ## 배경
 
@@ -53,6 +55,13 @@ stdin 모드에서도 Home / Ctrl+n,p / PageUp / 북마크 점프 등이 **ring 
 - **회전 간극**: `path.1` 생성 → `path` 재오픈 사이에 evict 된 seq 는 물리적으로 추적 불가. "회전 경계 이후만 scrollback" 을 수용할지 결정 필요.
 - **동시성**: writer(UI goroutine) 와 reader(`tea.Cmd` goroutine) 가 같은 `-out` 파일을 건드림. OS 레벨 append write 는 원자적이지만 offset 인덱스 mutation 은 명시 mutex 필요.
 - **테스트 인프라**: `tail -F` 류 증분 동작은 time-driven 이라 테스트가 flaky 해지기 쉬움. 파일을 직접 manual 확장하는 in-process 헬퍼로 검증.
+
+## 구현 요약
+
+- [`fileindex.IncrementalOffsetIndex`](../../internal/fileindex/incremental.go): append-only 바이트 범위를 증분 스캔하여 줄 시작 오프셋 누적.
+- [`storage.LineAppender.Size`/`ConsumeRotation`](../../internal/storage/append.go): 인덱서가 RefreshTo 할 대상 크기와 회전 이벤트 소비 API.
+- [`RingStreamProvider`](../../internal/ui/window_provider.go): `SetDiskFallback` 로 outPath + 인덱스 연결. Fetch 는 ring 범위 외(앞/뒤) 를 모두 disk 로 해결. `NoteRotation` 이 `horizon`/`seqBase` 를 바꾸고 인덱스를 reset.
+- [`Model.stdinScrollback`](../../internal/ui/model.go) + [`stdin_scrollback.go`](../../internal/ui/stdin_scrollback.go): Home 시 `cmdLoadStdinScrollbackAt(Horizon())` 으로 과거 창 로드, 그 동안 신규 라인은 ring 에 push 하지 않고 seq 만 advance(`Ring.AdvanceSeq`). End 는 `cmdExitStdinScrollback` 으로 live tail 을 다시 Fetch.
 
 ## Success Criteria (제안)
 

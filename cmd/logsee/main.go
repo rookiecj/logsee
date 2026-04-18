@@ -56,7 +56,7 @@ func main() {
 	ignoreCase := flag.Bool("ignore-case", false, "case-insensitive filter matching only; highlight search is always case-sensitive")
 	noLineNumbers := flag.Bool("no-line-numbers", false, "hide sequence column")
 	syncInterval := flag.Duration("sync-interval", 0, "if >0, fsync the output file on this interval (e.g. 1s)")
-	outMaxBytes := flag.Int("out-max-bytes", 10<<20, "rotate --out when the flushed file plus the next line would exceed this size (bytes); 0 disables rotation (default 10 MiB)")
+	outMaxBytes := flag.Int("out-max-bytes", 0, "rotate --out when the flushed file plus the next line would exceed this size (bytes); 0 disables rotation (default, single growing file)")
 	stdinBatchMS := flag.Int("stdin-batch-ms", 40, "coalesce input lines (stdin or file) for UI updates (0 = send each line immediately)")
 	stateDir := flag.String("state-dir", "", "directory for filter/highlight MRU (state.json); default is $HOME/.local/logsee")
 	configPathFlag := flag.String("config", "", "path to config.toml (default: $HOME/.local/logsee/config.toml)")
@@ -211,7 +211,16 @@ func main() {
 	ring := buffer.NewRing(*maxLines)
 	mod := ui.NewModel(ring, store, *ignoreCase, *noLineNumbers, effectiveOut, inputSource, version.Line(), hist, logTypeOpts, cfg.HighlightColorNames)
 	if !fromFile {
-		mod.SetWindowProvider(ui.NewRingStreamProvider(ring))
+		rsp := ui.NewRingStreamProvider(ring)
+		if store != nil && effectiveOut != "" {
+			// Disk-backed scrollback: seqs evicted from the ring resolve via the --out file.
+			// Pre-existing bytes (when --out points at an existing file) are opaque context;
+			// session seqs begin at 1 and map to file lines written after startByte.
+			startByte := store.Size()
+			idx := fileindex.NewIncrementalOffsetIndex(effectiveOut, startByte)
+			rsp.SetDiskFallback(effectiveOut, idx, 1)
+		}
+		mod.SetWindowProvider(rsp)
 	}
 	p := tea.NewProgram(mod, tea.WithInput(tty), tea.WithAltScreen())
 

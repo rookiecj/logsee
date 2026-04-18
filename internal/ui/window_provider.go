@@ -85,27 +85,86 @@ func (p *FileSliceProvider) EstimateBytes(firstSeq, lastSeq int64) int64 {
 // stdin-side counterpart to [FileSliceProvider]: both implement [WindowProvider] so the UI can
 // treat file and stream inputs uniformly (docs/plans/stdin-fileprovider-unify-plan.md, Phase 1).
 //
-// TotalLines reflects the cumulative count of lines received from the stream — it does not
-// shrink when the ring evicts older entries. Fetch copies records whose Seq falls in the
-// requested range; seqs that have been evicted are silently absent (callers observe the same
-// scrollback horizon as today's stdin path).
+// Disk fallback: if [SetDiskFallback] is invoked at construction, seqs evicted from the ring
+// are resolved through the --out file via [fileindex.IncrementalOffsetIndex]. Seqs lost to
+// pre-rotation files remain unreachable; the horizon tracks the earliest reachable seq.
 //
-// FileSize and EstimateBytes return 0: the stream has no byte-addressable backing store, and
-// the disk-scan byte guardrail (PRD §4.1) is not applicable here. The existing filePartial
-// gate keeps stdin off the disk-scan code paths, so a zero estimate is safe.
+// TotalLines reflects the cumulative count of lines received from the stream — it does not
+// shrink when the ring evicts older entries. FileSize/EstimateBytes cover the disk portion
+// when fallback is enabled; otherwise they return 0 (the filePartial gate prevents disk-scan
+// guardrails from tripping on pure-ring input).
 type RingStreamProvider struct {
 	buf       *buffer.Ring
 	mu        sync.Mutex
 	totalRecv int64
+
+	outPath string
+	index   *fileindex.IncrementalOffsetIndex
+	seqBase int64 // seq of file line 1 (1 for fresh file; bumps on rotation)
+	horizon int64 // earliest seq reachable via disk fallback (1 unless rotation occurred)
 }
 
 // NewRingStreamProvider wraps buf. buf must not be nil.
 func NewRingStreamProvider(buf *buffer.Ring) *RingStreamProvider {
-	return &RingStreamProvider{buf: buf}
+	return &RingStreamProvider{buf: buf, seqBase: 1, horizon: 1}
 }
 
-// NoteReceived bumps the cumulative receive count by n. Called from the UI goroutine after
-// applyIncomingLines pushes a batch into the ring.
+// SetDiskFallback enables disk-backed scrollback. path is the --out file, idx tracks its line
+// offsets, startSeq is the seq assigned to the file's first logical line (1 for a fresh file).
+func (p *RingStreamProvider) SetDiskFallback(path string, idx *fileindex.IncrementalOffsetIndex, startSeq int64) {
+	if p == nil {
+		return
+	}
+	if startSeq < 1 {
+		startSeq = 1
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.outPath = path
+	p.index = idx
+	p.seqBase = startSeq
+	p.horizon = startSeq
+}
+
+// Push pushes text into the ring and bumps the cumulative receive count. It holds the
+// provider mutex so Fetch goroutines see a consistent ring.
+func (p *RingStreamProvider) Push(text string) domain.Record {
+	if p == nil || p.buf == nil {
+		return domain.Record{}
+	}
+	p.mu.Lock()
+	rec := p.buf.Push(text)
+	p.mu.Unlock()
+	atomic.AddInt64(&p.totalRecv, 1)
+	return rec
+}
+
+// AssignSeq advances the sequence counter without touching the ring. Used by stdin
+// scrollback mode so the historical window loaded into the ring stays stable while
+// new lines continue to be persisted to disk and indexed.
+func (p *RingStreamProvider) AssignSeq() int64 {
+	if p == nil || p.buf == nil {
+		return 0
+	}
+	p.mu.Lock()
+	seq := p.buf.AdvanceSeq()
+	p.mu.Unlock()
+	atomic.AddInt64(&p.totalRecv, 1)
+	return seq
+}
+
+// HasDiskFallback reports whether disk-backed scrollback is available.
+func (p *RingStreamProvider) HasDiskFallback() bool {
+	if p == nil {
+		return false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.outPath != "" && p.index != nil
+}
+
+// NoteReceived bumps the cumulative receive count by n. Retained for callers that push
+// directly into the ring (e.g. tests); new code should prefer [Push].
 func (p *RingStreamProvider) NoteReceived(n int) {
 	if p == nil || n <= 0 {
 		return
@@ -113,30 +172,128 @@ func (p *RingStreamProvider) NoteReceived(n int) {
 	atomic.AddInt64(&p.totalRecv, int64(n))
 }
 
-// Fetch returns ring records whose Seq ∈ [firstSeq, lastSeq]. Out-of-range or evicted seqs
-// are silently absent. Holds p.mu while scanning the ring so concurrent tea.Cmd goroutines
-// and UI-thread pushes do not race on the ring slice.
-func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, error) {
-	if p == nil || p.buf == nil || lastSeq < firstSeq {
-		return nil, nil
+// NoteRotation records that firstSeqInNewFile is the seq of the line now at file offset 0.
+// Seqs below firstSeqInNewFile become unreachable via disk fallback (they lived in a
+// pre-rotation file). The offset index is reset to scan the new file from offset 0.
+func (p *RingStreamProvider) NoteRotation(firstSeqInNewFile int64) {
+	if p == nil || firstSeqInNewFile < 1 {
+		return
+	}
+	p.mu.Lock()
+	p.seqBase = firstSeqInNewFile
+	p.horizon = firstSeqInNewFile
+	idx := p.index
+	p.mu.Unlock()
+	if idx != nil {
+		idx.Reset(0)
+	}
+}
+
+// RefreshIndex grows the offset index to cover newly flushed bytes in the backing file.
+func (p *RingStreamProvider) RefreshIndex(size int64) error {
+	if p == nil || p.index == nil {
+		return nil
+	}
+	return p.index.RefreshTo(size)
+}
+
+// Horizon returns the earliest seq reachable via disk fallback.
+func (p *RingStreamProvider) Horizon() int64 {
+	if p == nil {
+		return 1
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	n := p.buf.Len()
-	if n == 0 {
+	if p.horizon < 1 {
+		return 1
+	}
+	return p.horizon
+}
+
+// Fetch returns records for seqs in [firstSeq, lastSeq]. Seqs present in the live ring
+// come from the ring; seqs outside the ring (evicted, or arrived while scrollback froze
+// the ring) resolve through the --out file when disk fallback is enabled. Seqs below the
+// rotation horizon are silently absent.
+func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, error) {
+	if p == nil || p.buf == nil || lastSeq < firstSeq || firstSeq < 1 {
 		return nil, nil
 	}
-	var out []domain.Record
-	for i := range n {
-		rec := p.buf.At(i)
-		if rec.Seq < firstSeq {
-			continue
+	p.mu.Lock()
+	var ringRecs []domain.Record
+	var ringFirst, ringLast int64
+	if n := p.buf.Len(); n > 0 {
+		ringFirst = p.buf.At(0).Seq
+		ringLast = p.buf.At(n - 1).Seq
+		for i := range n {
+			rec := p.buf.At(i)
+			if rec.Seq < firstSeq {
+				continue
+			}
+			if rec.Seq > lastSeq {
+				break
+			}
+			ringRecs = append(ringRecs, rec)
 		}
-		if rec.Seq > lastSeq {
-			break
-		}
-		out = append(out, rec)
 	}
+	outPath := p.outPath
+	idx := p.index
+	seqBase := p.seqBase
+	horizon := p.horizon
+	p.mu.Unlock()
+
+	readDisk := func(dFirst, dLast int64) ([]domain.Record, error) {
+		if outPath == "" || idx == nil {
+			return nil, nil
+		}
+		dFirst = max(dFirst, horizon, seqBase)
+		if dFirst > dLast {
+			return nil, nil
+		}
+		offsets := idx.Snapshot()
+		if len(offsets) == 0 {
+			return nil, nil
+		}
+		fileFirst := int(dFirst - seqBase + 1)
+		fileLast := int(dLast - seqBase + 1)
+		recs, err := fileindex.ReadWindowRecords(outPath, offsets, fileFirst, fileLast)
+		if err != nil {
+			return nil, err
+		}
+		shift := seqBase - 1
+		for i := range recs {
+			recs[i].Seq += shift
+		}
+		return recs, nil
+	}
+
+	// Disk portion before the ring: seqs in [firstSeq, min(ringFirst-1, lastSeq)].
+	var diskBefore []domain.Record
+	if ringFirst == 0 || firstSeq < ringFirst {
+		dLast := lastSeq
+		if ringFirst > 0 && dLast >= ringFirst {
+			dLast = ringFirst - 1
+		}
+		recs, err := readDisk(firstSeq, dLast)
+		if err != nil {
+			return nil, err
+		}
+		diskBefore = recs
+	}
+
+	// Disk portion after the ring: seqs > ringLast (scrollback-mode arrivals not yet in ring).
+	var diskAfter []domain.Record
+	if ringLast > 0 && lastSeq > ringLast {
+		recs, err := readDisk(ringLast+1, lastSeq)
+		if err != nil {
+			return nil, err
+		}
+		diskAfter = recs
+	}
+
+	out := make([]domain.Record, 0, len(diskBefore)+len(ringRecs)+len(diskAfter))
+	out = append(out, diskBefore...)
+	out = append(out, ringRecs...)
+	out = append(out, diskAfter...)
 	return out, nil
 }
 
@@ -149,11 +306,63 @@ func (p *RingStreamProvider) TotalLines() int64 {
 	return atomic.LoadInt64(&p.totalRecv)
 }
 
-// FileSize returns 0 — stream has no byte-addressable backing store.
-func (p *RingStreamProvider) FileSize() int64 { return 0 }
+// FileSize returns the on-disk size of the --out file when disk fallback is enabled, else 0.
+func (p *RingStreamProvider) FileSize() int64 {
+	if p == nil {
+		return 0
+	}
+	p.mu.Lock()
+	idx := p.index
+	p.mu.Unlock()
+	if idx == nil {
+		return 0
+	}
+	return idx.IndexedBytes()
+}
 
-// EstimateBytes returns 0 — the disk-scan guardrail does not apply to in-memory stream reads.
-func (p *RingStreamProvider) EstimateBytes(firstSeq, lastSeq int64) int64 { return 0 }
+// EstimateBytes approximates the byte span of seqs on disk (ring seqs contribute 0 — not a
+// disk-backed source). Used for the PRD §4.1 100 MiB disk-scan guardrail.
+func (p *RingStreamProvider) EstimateBytes(firstSeq, lastSeq int64) int64 {
+	if p == nil || lastSeq < firstSeq {
+		return 0
+	}
+	p.mu.Lock()
+	idx := p.index
+	seqBase := p.seqBase
+	horizon := p.horizon
+	p.mu.Unlock()
+	if idx == nil {
+		return 0
+	}
+	diskFirst := max(firstSeq, horizon, seqBase)
+	if diskFirst > lastSeq {
+		return 0
+	}
+	offsets := idx.Snapshot()
+	n := int64(len(offsets))
+	if n == 0 {
+		return 0
+	}
+	fileFirst := diskFirst - seqBase + 1
+	fileLast := lastSeq - seqBase + 1
+	if fileFirst > n {
+		return 0
+	}
+	if fileLast > n {
+		fileLast = n
+	}
+	start := offsets[fileFirst-1]
+	var end int64
+	if fileLast < n {
+		end = offsets[fileLast]
+	} else {
+		end = idx.IndexedBytes()
+	}
+	if end < start {
+		return 0
+	}
+	return end - start
+}
 
 // windowProviderOrFallback returns the Model's configured provider, falling back to one
 // synthesized from raw fileOffsets/filePath/fileSizeBytes fields. This keeps existing tests

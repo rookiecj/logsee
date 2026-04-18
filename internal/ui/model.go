@@ -90,6 +90,10 @@ type Model struct {
 	// windowProvider: Phase 2 abstraction over random-access disk reads. Set by applyFileIndexReady
 	// in production; tests that seed fileOffsets directly fall back via windowProviderOrFallback().
 	windowProvider WindowProvider
+	// stdinScrollback: true while the ring holds a historical window loaded from --out via
+	// RingStreamProvider disk fallback. Incoming stdin lines persist to disk and bump the seq
+	// counter but are not pushed into the ring, so the displayed window stays stable. End exits.
+	stdinScrollback bool
 	// searchScanConfirmOpen: modal gate when lazy n/p scan exceeds 100 MiB.
 	searchScanConfirmOpen bool
 	searchScanResumeSeq   int64

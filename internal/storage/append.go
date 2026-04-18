@@ -22,6 +22,7 @@ type LineAppender struct {
 	w          *bufio.Writer
 	ticker     *time.Ticker
 	stop       chan struct{}
+	rotated    bool
 }
 
 // NewLineAppender opens path for append. maxOutFileBytes > 0 enables rotation: before each line,
@@ -117,7 +118,38 @@ func (a *LineAppender) rotateLocked() error {
 	}
 	a.f = f
 	a.w = bufio.NewWriterSize(f, 1<<16)
+	a.rotated = true
 	return nil
+}
+
+// Size returns the current on-disk size of the active file. Buffered bytes
+// that have not yet been flushed are not counted; callers that care should
+// call Flush first.
+func (a *LineAppender) Size() int64 {
+	if a == nil {
+		return 0
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	st, err := a.f.Stat()
+	if err != nil {
+		return 0
+	}
+	return st.Size()
+}
+
+// ConsumeRotation returns true exactly once after each rotation event. Callers
+// use it to react to a rotation (e.g. reset a scrollback index) without racing
+// against the next write.
+func (a *LineAppender) ConsumeRotation() bool {
+	if a == nil {
+		return false
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	r := a.rotated
+	a.rotated = false
+	return r
 }
 
 func shiftRotated(path string, keep int) error {

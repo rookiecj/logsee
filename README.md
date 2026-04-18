@@ -49,7 +49,7 @@ logsee [flags] [input-file]
 아래는 실제 구현 기준 요약입니다(정확한 설명/기본값은 `logsee -h` 출력과 [`cmd/logsee/main.go`](cmd/logsee/main.go)를 우선합니다).
 
 - **`--out`**: **stdin 입력일 때만** 받은 원문 줄을 해당 파일에 append. 비어 있으면 현재 디렉터리에 `logsee-YYYYMMDD-HHMMSS.log` 생성. **`input-file` 지정 시에는 무시**(저장 안 함)
-- **`--out-max-bytes`**: 출력 파일 로테이션(바이트). `0`이면 로테이션 비활성
+- **`--out-max-bytes`**: 출력 파일 로테이션(바이트). 기본값 `0` (로테이션 비활성, 단일 파일)
 - **`--max-lines`**: 메모리에 유지할 최대 줄 수(링 버퍼)
 - **`--ignore-case`**: **필터 매칭만** 대소문자 무시(하이라이트 검색은 항상 대소문자 구분)
 - **`--no-line-numbers`**: 시퀀스(줄번호) 컬럼 숨김

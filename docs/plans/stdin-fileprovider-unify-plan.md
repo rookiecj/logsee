@@ -14,7 +14,7 @@ logsee 의 입력 경로가 비대칭이라 UI 에 분기가 많다.
 사용자 원안은 "stdin → 파일 저장 → 파일 경로로 재독" 파이프라인. 파일을 중간 큐로 쓰면 세 가지가 발생:
 
 1. per-line flush + read 왕복 → 실시간성 하락.
-2. `-out` 회전 (`outMaxBytes` 기본 10 MiB) 이 reader 와 충돌. inode/rotate 추적 필요.
+2. `-out` 회전 (`outMaxBytes` 기본 100 MiB) 이 reader 와 충돌. inode/rotate 추적 필요.
 3. `BuildLineStartOffsets` 는 1 회 빌드. tail-style 증분 인덱서 부재.
 
 → **파일을 중간 큐로 쓰지 않는 "tee 모델"** 로 우회: 두 경로가 같은 추상(Ring + WindowProvider)을 채우게 한다.

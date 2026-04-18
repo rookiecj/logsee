@@ -64,7 +64,6 @@ func (m *Model) renderSearchConfirmDialog() string {
 
 // buildStatusBaseText is the status line without clipboard toast or selection suffix.
 func (m *Model) buildStatusBaseText() string {
-	fidx := m.filteredIndices()
 	in := "in:" + truncateStatusPath(m.inputSource, 28)
 	if m.stdinClosed {
 		in += ":eof"
@@ -84,7 +83,7 @@ func (m *Model) buildStatusBaseText() string {
 		wrap = "wrap:on"
 	}
 	parts := []string{
-		fmt.Sprintf("lines:%d/%d", len(fidx), m.statusLineTotal()),
+		fmt.Sprintf("lines:%d", m.statusLineTotal()),
 		m.statusTypeText(),
 		follow,
 		in,
@@ -139,8 +138,7 @@ func (m *Model) statusBaseStyledBlock() string {
 	st := m.statusBarStyle()
 	onSt := m.statusValueOnStyle()
 	offSt := m.statusValueOffStyle()
-	fidx := m.filteredIndices()
-	lines := st.Render(fmt.Sprintf("lines:%d/%d", len(fidx), m.statusLineTotal()))
+	lines := st.Render(fmt.Sprintf("lines:%d", m.statusLineTotal()))
 	typePart := st.Render(m.statusTypeText())
 	in := "in:" + truncateStatusPath(m.inputSource, 28)
 	if m.stdinClosed {
