@@ -1,10 +1,10 @@
-# Log read pipeline (파일 입력)
+# Log read pipeline (파일 입력 + stdin 스트림)
 
 ## Why
 
 positional **로그 파일**은 전체를 한 번에 메모리에 올리지 않고, 디스크에서 **청크 단위로 읽고** 논리 줄을 복원한 뒤, 화면에 맞는 **슬라이딩 윈도우**만 [`buffer.Ring`](../../internal/buffer/ring.go)에 둔다. PRD §4.1([`docs/plans/stdio-log-viewer-prd.md`](../plans/stdio-log-viewer-prd.md))과 동일한 목표다.
 
-**stdin**은 스트림 누적 모드라 이 문서 범위 밖이다(부분 로딩 없음).
+**stdin 스트림**은 과거엔 별도 코드 경로로 다뤘지만, [`docs/plans/stdin-fileprovider-unify-plan.md`](../plans/stdin-fileprovider-unify-plan.md)의 tee 모델 적용 이후 **단일 `WindowProvider` 추상**으로 통합되었다. 두 경로 모두 `Ring + WindowProvider` 쌍을 채우고, UI 는 provider 인터페이스 뒤에서 임의 접근 윈도우 조회를 수행한다.
 
 ## 상위 흐름
 
@@ -92,6 +92,44 @@ cmd 함수 규약 (호출자가 의도를 seq 앵커로 표현):
 
 이 규약이 PageUp 시 "vh개 매치 뒤로" 의도를 그대로 전달하며, 새 창 로드가 raw seq 기반일 때 발생하던 "padding 때문에 cursor가 화면 중간에 보이는" 회귀를 제거한다.
 
+## stdin 스트림 경로 (tee 모델)
+
+stdin 입력은 다음처럼 동작한다:
+
+1. `loginput.ScanLines` 가 stdin 을 읽어 `LineMsg` / `LineBatchMsg` 로 UI 에 전달.
+2. `applyIncomingLines` ([`model_update.go`](../../internal/ui/model_update.go)) 가 각 줄을 (옵션 `-out` 경로로 append) → `Ring.Push` → `RingStreamProvider.NoteReceived(n)`.
+3. UI 는 `m.windowProvider`(stdin 시작 시 `NewRingStreamProvider(ring)` 로 주입됨) 를 통해 seq 범위 조회를 수행. `Ring` 은 물리 스토어, provider 는 **누적 수신 카운터** 를 노출 (ring 용량 초과 evict 와 무관하게 단조 증가).
+
+```mermaid
+flowchart LR
+  stdinFd[stdin/pipe]
+  scanLines[loginput.ScanLines]
+  appender[LineAppender -out]
+  ring[Ring]
+  rsp[RingStreamProvider]
+  ui[UI seq queries]
+  stdinFd --> scanLines --> appender
+  scanLines --> ring
+  ring --> rsp --> ui
+```
+
+- `RingStreamProvider.Fetch(first, last)`: ring 에서 `Seq ∈ [first,last]` 인 레코드만 복사 반환. ring 에서 evict 된 seq 는 결과에서 자연 누락 — 현 stdin scrollback horizon 과 동일 의미.
+- `RingStreamProvider.TotalLines()`: 누적 수신 카운터. status strip `lines:N/M` 의 분모로 쓰인다 (ring evict 후에도 정확).
+- `RingStreamProvider.FileSize()` / `EstimateBytes()`: 0. 스트림은 바이트 주소 지정이 불가하며, disk-scan 바이트 가드(PRD §4.1)는 file 전용.
+
+stdin 경로의 **랜덤 액세스 한계**: 링 용량을 벗어난 과거 라인은 현재 조회 불가. `-out` 파일에서 다시 읽는 disk-fallback 계획은 [`docs/plans/scrollback-disk-fallback.md`](../plans/scrollback-disk-fallback.md).
+
+## 공통: WindowProvider 인터페이스
+
+| 메서드 | 파일 경로 (`FileSliceProvider`) | stdin 경로 (`RingStreamProvider`) |
+|--------|-------------------------------|-----------------------------------|
+| `Fetch(first, last)` | `fileindex.ReadWindowRecords` (seek + ScanLines) | ring 슬라이스 복사 |
+| `TotalLines()` | `len(offsets)` | 누적 수신 카운터 (atomic) |
+| `FileSize()` | 바이트 크기 | 0 |
+| `EstimateBytes(first, last)` | offsets 차분 (disk guard 에 사용) | 0 |
+
+[`internal/ui/window_provider.go`](../../internal/ui/window_provider.go) 참조.
+
 ## 관련 파일
 
 | 역할 | 파일 |
@@ -99,5 +137,7 @@ cmd 함수 규약 (호출자가 의도를 seq 앵커로 표현):
 | 청크 읽기·줄 파싱 | [`internal/loginput/scan.go`](../../internal/loginput/scan.go) |
 | 오프셋/윈도우 읽기 API | [`internal/fileindex/window.go`](../../internal/fileindex/window.go) |
 | 부분 로딩 메시지·명령 | [`internal/ui/file_partial.go`](../../internal/ui/file_partial.go) |
+| WindowProvider 추상 + stdin 구현 | [`internal/ui/window_provider.go`](../../internal/ui/window_provider.go) |
+| stdin 배치 수신 | [`internal/ui/model_update.go`](../../internal/ui/model_update.go) (`applyIncomingLines`) |
 | 링 교체·stdin Push | [`internal/buffer/ring.go`](../../internal/buffer/ring.go) |
-| 메시지 처리 진입 | [`internal/ui/model.go`](../../internal/ui/model.go) (`FilePartialBootstrapMsg`, `FileIndexReadyMsg`, `FileWindowLoadedMsg`) |
+| 메시지 처리 진입 | [`internal/ui/model.go`](../../internal/ui/model.go) (`FilePartialBootstrapMsg`, `FileIndexReadyMsg`, `FileWindowLoadedMsg`, `LineMsg`, `LineBatchMsg`) |

@@ -328,6 +328,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // applyIncomingLines persists each line to disk first when store is set (stdin input); then appends to the ring.
 // wasAtTail is determined once before the batch (PRD: follow tail when new lines arrive in a burst).
+//
+// The filePartial guard is a safety rail: LineMsg / LineBatchMsg only fire from the stdin pump
+// (cmd/logsee/main.go), and filePartial inputs never spawn that pump. Kept for defense in depth.
 func (m *Model) applyIncomingLines(texts []string) {
 	if m.filePartial {
 		return
@@ -337,6 +340,7 @@ func (m *Model) applyIncomingLines(texts []string) {
 	}
 	fidxBefore := m.filteredIndices()
 	wasAtTail := m.follow && m.tailAligned(fidxBefore)
+	pushed := 0
 	for _, text := range texts {
 		if m.store != nil {
 			if err := m.store.WriteLine(text); err != nil {
@@ -349,6 +353,10 @@ func (m *Model) applyIncomingLines(texts []string) {
 			}
 		}
 		_ = m.buf.Push(text)
+		pushed++
+	}
+	if rsp, ok := m.windowProvider.(*RingStreamProvider); ok {
+		rsp.NoteReceived(pushed)
 	}
 	fidx := m.filteredIndices()
 	if m.follow && wasAtTail && len(fidx) > 0 {

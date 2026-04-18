@@ -195,6 +195,11 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 	case "ctrl+n":
 		m.clearRangeSelection()
 		if m.searchBuf != "" {
+			// filePartial-only: lazy disk scan falls back to the on-disk window when the in-memory
+			// hit list is exhausted. stdin's RingStreamProvider holds only the live ring, so extending
+			// scan past the ring would require a disk-fallback indexer (see
+			// docs/plans/scrollback-disk-fallback.md). Until that lands, stdin uses the in-memory
+			// search path only.
 			if m.filePartial && len(m.fileOffsets) > 0 {
 				prev := m.cursorIdx
 				m.gotoNextSearchHit(fidx)
@@ -209,6 +214,7 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 	case "ctrl+p":
 		m.clearRangeSelection()
 		if m.searchBuf != "" {
+			// See ctrl+n above — stdin lazy search deferred to scrollback-disk-fallback.
 			if m.filePartial && len(m.fileOffsets) > 0 {
 				prev := m.cursorIdx
 				m.gotoPrevSearchHit(fidx)
@@ -256,6 +262,9 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 	case "home":
 		m.clearRangeSelection()
 		m.follow = false
+		// filePartial-only: jump to absolute file line 1 via a disk window load. In stdin mode,
+		// Home means "top of the live ring" — which the idx=0 path below already covers. Lines
+		// evicted from the ring cannot be recovered until the scrollback disk-fallback ships.
 		if m.filePartial && len(m.fileOffsets) > 0 {
 			return true, m.cmdLoadFileWindowStartingAt(1)
 		}
@@ -265,6 +274,8 @@ func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd)
 	case "end":
 		m.clearRangeSelection()
 		m.follow = true
+		// filePartial-only: load the window around the last file line. In stdin mode, End pins to
+		// the live ring tail (latest received line); the idx path below does exactly that.
 		if m.filePartial && len(m.fileOffsets) > 0 && m.fileTotalLines > 0 {
 			return true, m.cmdLoadFileWindowAroundBottom(int64(m.fileTotalLines), vh)
 		}

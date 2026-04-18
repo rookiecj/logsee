@@ -223,6 +223,13 @@ func NewModel(buf *buffer.Ring, store *storage.LineAppender, ignoreCase, noLineN
 	}
 }
 
+// SetWindowProvider installs the random-access provider for the current input source. Called
+// once at startup for the stdin path (with a [RingStreamProvider]); the file path installs its
+// own [FileSliceProvider] via [Model.applyFileIndexReady] after offsets are indexed.
+func (m *Model) SetWindowProvider(p WindowProvider) {
+	m.windowProvider = p
+}
+
 func (m *Model) persistState() {
 	if m.stateFile == "" {
 		return

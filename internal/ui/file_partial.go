@@ -143,9 +143,21 @@ func (m *Model) applyFileWindowLoaded(recs []domain.Record, firstLine int64) {
 	m.syncSeqFromIdx(fidx)
 }
 
+// statusLineTotal returns the denominator for the "lines:N/M" status strip.
+//
+// Resolution order (docs/plans/stdin-fileprovider-unify-plan.md, Phase 2):
+//  1. File-partial mode with a known line count — authoritative, comes from [applyFileIndexReady].
+//  2. A [WindowProvider] advertising a positive TotalLines — covers stdin's [RingStreamProvider],
+//     whose counter reflects cumulative receives (monotonic across ring evictions).
+//  3. Ring size — fallback for tests that neither seed fileTotalLines nor install a provider.
 func (m *Model) statusLineTotal() int {
 	if m.filePartial && m.fileTotalLines > 0 {
 		return m.fileTotalLines
+	}
+	if m.windowProvider != nil {
+		if tot := m.windowProvider.TotalLines(); tot > 0 {
+			return int(tot)
+		}
 	}
 	if m.buf == nil {
 		return 0

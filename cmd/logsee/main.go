@@ -210,6 +210,9 @@ func main() {
 
 	ring := buffer.NewRing(*maxLines)
 	mod := ui.NewModel(ring, store, *ignoreCase, *noLineNumbers, effectiveOut, inputSource, version.Line(), hist, logTypeOpts, cfg.HighlightColorNames)
+	if !fromFile {
+		mod.SetWindowProvider(ui.NewRingStreamProvider(ring))
+	}
 	p := tea.NewProgram(mod, tea.WithInput(tty), tea.WithAltScreen())
 
 	if fromFile {
