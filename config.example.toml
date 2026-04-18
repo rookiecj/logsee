@@ -1,0 +1,52 @@
+# logsee configuration (TOML)
+#
+# 설치: mkdir -p ~/.local/logsee && cp config.example.toml ~/.local/logsee/config.toml
+# 또는: logsee --print-default-config > ~/.local/logsee/config.toml
+#
+# 이 파일이 없으면 아래와 동일한 값이 내장 기본값으로 씁니다.
+# 우선순위: CLI (--log-type, --log-type-probe-lines) > 이 파일의 [log_type] > 그 외 내장 기본.
+#
+# 구성 요약:
+#   [log_type]          — 줄 형식·프로브(레벨 태그 추출 / auto 판별)
+#   [log_type.patterns] — 형식별 정규식(adb는 한 글자 레벨, bracket은 태그 식별자 등)
+#   [highlight_color_names] — 하이라이트에서 #이름 으로 쓸 ANSI 256 색 이름
+#
+
+# --- [log_type] 로그 줄 형식 ---
+#
+# default — 줄 앞부분을 어떻게 해석할지:
+#   "auto"  비어 있지 않은 앞쪽 probe_lines 줄로 plain / adb 형을 추론
+#   "plain" 레벨 태그 없이 한 줄 텍스트로 취급
+#   "adb"   Android logcat 스타일 헤더(날짜·시간·PID·레벨 한 글자 등)
+#
+# probe_lines — default가 auto일 때 샘플링에 쓰는 줄 수(>=1)
+#
+[log_type]
+default = "auto"  # auto | plain | adb
+
+probe_lines = 32  # auto 프로브 시 상단에서 읽는 줄 수
+
+# --- [log_type.patterns] 형식 판별·레벨 추출용 정규식 ---
+# bracket_head     — [..] … Name: 에서 Name(첫 캡처) — 레벨/태그 후보
+# adb_head_time    — 날짜+시간 형 Android 헤더의 레벨 한 글자(V/D/I/W/E/F)
+# adb_head_threadtime — MM-dd 시간 형 threadtime 헤더의 레벨 한 글자
+#
+[log_type.patterns]
+bracket_head = "^\\[[^\\]]+\\]\\s+([A-Za-z][A-Za-z0-9_]*)\\s*:"
+adb_head_time = "^\\d{4}-\\d{2}-\\d{2}\\s+\\d{1,2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\d+-\\d+\\s+\\S+\\s+\\S+\\s+([VDIWEF])\\s"
+adb_head_threadtime = "^\\d{2}-\\d{2}\\s+\\d{1,2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\d+\\s+\\d+\\s+([VDIWEF])\\s+\\S+:"
+
+# --- highlight_color_names: 하이라이트에서 #이름 으로 쓰는 ANSI 256 색(0–255) ---
+# TUI에서 / 로 검색(highlight) 확정 시: needle#숫자 또는 needle#이름 (토큰 규칙은 필터와 동일).
+# 이 섹션을 빼도 동일한 내장 이름이 적용됩니다. 여기서 값을 바꾸면 그 이름의 색만 덮어씁니다.
+[highlight_color_names]
+red = "196"  # 에러·경고 강조
+green = "40"  # 성공·정상
+yellow = "226"  # 주의·강조
+blue = "27"  # 정보
+magenta = "201"  # 특수 키워드
+cyan = "51"  # 구분선·디버그
+orange = "208"  # 경고(주황)
+purple = "93"  # 보조 강조
+gray = "245"  # 흐린 텍스트(밝은 회색 배경)
+grey = "245"  # gray와 동일(영국식 철자)

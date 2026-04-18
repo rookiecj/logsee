@@ -1,0 +1,51 @@
+# Build and publish archives when a version tag (v*) is pushed.
+# Targets: Linux (amd64, arm64), macOS Intel & Apple Silicon (amd64, arm64).
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build release archives
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          LDFLAGS="-s -w -X 'git.inpt.fr/42dottools/log/internal/version.AppVersion=${VERSION}'"
+          for pair in linux:amd64 linux:arm64 darwin:amd64 darwin:arm64; do
+            GOOS=${pair%:*}
+            GOARCH=${pair#*:}
+            NAME="logsee_${VERSION}_${GOOS}_${GOARCH}"
+            mkdir -p "dist/${NAME}"
+            env GOOS="$GOOS" GOARCH="$GOARCH" CGO_ENABLED=0 \
+              go build -trimpath -ldflags "$LDFLAGS" -o "dist/${NAME}/logsee" ./cmd/logsee
+            chmod +x "dist/${NAME}/logsee"
+            tar -C dist -czf "dist/${NAME}.tar.gz" "${NAME}"
+          done
+          (cd dist && sha256sum *.tar.gz > SHA256SUMS)
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
