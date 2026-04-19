@@ -17,6 +17,8 @@ const (
 	LogTypePlain
 	// LogTypeADB: Android logcat "-v time"-style lines.
 	LogTypeADB
+	// LogTypeJournal: `journalctl -o short-iso` / `short-iso-precise`.
+	LogTypeJournal
 )
 
 // LogTypeOpts configures CLI --log-type and --log-type-probe-lines.
@@ -30,7 +32,7 @@ func DefaultLogTypeOpts() LogTypeOpts {
 	return LogTypeOpts{Kind: LogTypeAuto, ProbeLines: 32}
 }
 
-// ParseLogTypeKind parses CLI values: auto, plain, adb (android).
+// ParseLogTypeKind parses CLI values: auto, plain, adb (android), journal.
 func ParseLogTypeKind(s string) (LogTypeKind, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "auto":
@@ -39,8 +41,10 @@ func ParseLogTypeKind(s string) (LogTypeKind, error) {
 		return LogTypePlain, nil
 	case "adb", "android":
 		return LogTypeADB, nil
+	case "journal", "journalctl":
+		return LogTypeJournal, nil
 	default:
-		return 0, fmt.Errorf("unknown log type %q (want auto, plain, adb)", s)
+		return 0, fmt.Errorf("unknown log type %q (want auto, plain, adb, journal)", s)
 	}
 }
 
@@ -50,6 +54,8 @@ func initialLogFormat(kind LogTypeKind) (filter.LogFormat, bool) {
 		return filter.FormatPlain, true
 	case LogTypeADB:
 		return filter.FormatAndroid, true
+	case LogTypeJournal:
+		return filter.FormatSystemdJournal, true
 	case LogTypeAuto:
 		return filter.FormatPlain, false
 	default:
@@ -61,6 +67,8 @@ func formatShortName(f filter.LogFormat) string {
 	switch f {
 	case filter.FormatAndroid:
 		return "adb"
+	case filter.FormatSystemdJournal:
+		return "journal"
 	case filter.FormatPlain:
 		return "plain"
 	default:

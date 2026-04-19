@@ -57,7 +57,7 @@ logsee [flags] [input-file]
 - **`--stdin-batch-ms`**: 입력 줄을 UI 업데이트 단위로 묶기(0이면 줄마다 즉시 반영)
 - **`--config`**: 로그 타입/패턴 설정 파일 경로(기본: `$HOME/.local/logsee/config.toml`). **`--print-default-config`**: 내장 기본값과 동일한 주석 포함 TOML을 stdout에 출력
 - 필터/하이라이트 MRU 저장 디렉터리는 `config.toml`의 **`[history] dir`** 로 지정합니다(비워두면 `$HOME/.local/logsee`, 파일명 `state.json`).
-- **`--log-type`**: `level:` 태그용 줄 형태 — `auto`(기본), `plain`, `adb` (상태바 `type:`에 표시)
+- **`--log-type`**: 줄 형태 — `auto`(기본), `plain`, `adb`, `journal` (상태바 `type:`에 표시)
 - **`--log-type-probe-lines`**: `auto`일 때 샘플로 볼 비어 있지 않은 줄 수(기본 32)
 
 `--log-type` / `--log-type-probe-lines` 는 `config.toml` 값보다 우선합니다(CLI > config > 기본값). 예제는 저장소 루트 `config.example.toml` 또는 `logsee --print-default-config` 참고.
@@ -101,17 +101,30 @@ Android adb system 로그에서 ANR · native tombstone · Java FATAL 같은 이
 TUI 없이 파일/파이프를 한 번 훑어서 감지된 Finding·Span을 JSONL로 stdout에 씁니다.
 
 ```bash
-# file 입력
+# Android adb file 입력 (기본 --log-type=auto → adb)
 ./bin/logsee --export-anomalies adb.log > anomalies.jsonl
 
 # 파이프 입력 (adb logcat 직접)
 adb logcat -v threadtime | ./bin/logsee --export-anomalies -
 
+# journalctl 파이프 / 덤프 파일 — `--log-type=journal` 필수
+journalctl -u nginx.service -f -o short-iso-precise \
+  | ./bin/logsee --log-type=journal --export-anomalies -
+./bin/logsee --log-type=journal --export-anomalies boot.journal > anomalies.jsonl
+
 # Claude/CLI LLM과 즉시 합치기
 ./bin/logsee --export-anomalies adb.log \
   | jq 'select(.type=="span") | .span' \
-  | claude -p "이 Android 이벤트의 근본 원인을 1줄로 요약해줘"
+  | claude -p "이 이벤트의 근본 원인을 1줄로 요약해줘"
 ```
+
+**지원 포맷**:
+
+| `--log-type` | 입력 | 탐지하는 이상 종류 |
+|---|---|---|
+| `adb` (기본값, auto 감지) | Android logcat `-v threadtime` | FATAL EXCEPTION, ANR, native tombstone, Watchdog, LMK, Binder 실패, WTF, OOM, SELinux denied |
+| `journal` | `journalctl -o short-iso(-precise)` | systemd unit failed, systemd-coredump, kernel panic/BUG, segfault, OOM-kill, AppArmor DENIED, SELinux denied, sshd auth 실패 |
+| `plain` | 임의 텍스트 | (규칙 없음 — 필터/뷰어 용도) |
 
 출력 스키마(한 줄 당 하나의 JSON 객체):
 

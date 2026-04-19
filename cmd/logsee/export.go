@@ -14,6 +14,7 @@ import (
 	"git.inpt.fr/42dottools/log/internal/domain"
 	"git.inpt.fr/42dottools/log/internal/pipeline"
 	"git.inpt.fr/42dottools/log/internal/source"
+	"git.inpt.fr/42dottools/log/internal/ui"
 )
 
 // exportRecord is the on-wire envelope for `--export-anomalies`. One JSON
@@ -28,23 +29,26 @@ type exportRecord struct {
 // as JSONL to stdout. It exits 0 on clean completion, non-zero on error.
 // The summary line on stderr matches the logsee-ana format so tooling can
 // reuse parsers.
-func runExportAnomalies(args []string) error {
+//
+// format selects which parser and analyzer set to run. Empty or "android"
+// uses the adb path (threadtime + native/java/ANR block analyzers).
+// "journal" swaps in the short-iso parser plus kernel-panic and
+// systemd-coredump block analyzers.
+func runExportAnomalies(args []string, format domain.LineFormat) error {
 	src, err := openExportSource(args)
 	if err != nil {
 		return err
 	}
+	if format == domain.LineFormatUnknown {
+		format = domain.LineFormatAndroid
+	}
 
 	enc := json.NewEncoder(os.Stdout)
 	cfg := pipeline.Config{
-		Source:  src,
-		Format:  domain.LineFormatAndroid,
-		Builder: pipeline.DefaultRecordBuilder(),
-		Analyzers: []analysis.Analyzer{
-			classify.New(),
-			block.NewNativeCrash(),
-			block.NewJavaFatal(),
-			block.NewANR(),
-		},
+		Source:    src,
+		Format:    format,
+		Builder:   pipeline.DefaultRecordBuilder(),
+		Analyzers: exportAnalyzers(format),
 		OnFinding: func(f domain.Finding) {
 			_ = enc.Encode(exportRecord{Type: "finding", Finding: &f})
 		},
@@ -71,4 +75,29 @@ func openExportSource(args []string) (source.LogSource, error) {
 		return source.NewReader(os.Stdin), nil
 	}
 	return source.NewFile(args[0]), nil
+}
+
+func exportAnalyzers(format domain.LineFormat) []analysis.Analyzer {
+	common := []analysis.Analyzer{classify.New()}
+	switch format {
+	case domain.LineFormatJournal:
+		return append(common, block.NewKernelPanic(), block.NewSystemdCoredump())
+	default:
+		return append(common, block.NewNativeCrash(), block.NewJavaFatal(), block.NewANR())
+	}
+}
+
+// exportFormatFromLogType maps the CLI --log-type value to the
+// domain.LineFormat the exporter should feed the pipeline. Auto / unknown
+// falls back to Android so existing scripts that omit the flag keep
+// working.
+func exportFormatFromLogType(k ui.LogTypeKind) domain.LineFormat {
+	switch k {
+	case ui.LogTypeJournal:
+		return domain.LineFormatJournal
+	case ui.LogTypePlain:
+		return domain.LineFormatPlain
+	default:
+		return domain.LineFormatAndroid
+	}
 }

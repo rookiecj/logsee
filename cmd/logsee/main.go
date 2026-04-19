@@ -144,7 +144,7 @@ func main() {
 	}
 
 	if *exportAnomalies {
-		if err := runExportAnomalies(args); err != nil {
+		if err := runExportAnomalies(args, exportFormatFromLogType(ltKind)); err != nil {
 			fmt.Fprintf(os.Stderr, "logsee: %v\n", err)
 			os.Exit(1)
 		}

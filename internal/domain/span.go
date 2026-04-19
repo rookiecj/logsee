@@ -12,15 +12,21 @@ const (
 	SpanANR
 	SpanWatchdog
 	SpanGCStorm
+
+	// Journal-origin spans.
+	SpanKernelPanic
+	SpanSystemdCoredump
 )
 
 var spanKindNames = [...]string{
-	SpanUnknown:     "unknown",
-	SpanNativeCrash: "native_crash",
-	SpanJavaFatal:   "java_fatal",
-	SpanANR:         "anr",
-	SpanWatchdog:    "watchdog",
-	SpanGCStorm:     "gc_storm",
+	SpanUnknown:         "unknown",
+	SpanNativeCrash:     "native_crash",
+	SpanJavaFatal:       "java_fatal",
+	SpanANR:             "anr",
+	SpanWatchdog:        "watchdog",
+	SpanGCStorm:         "gc_storm",
+	SpanKernelPanic:     "kernel_panic",
+	SpanSystemdCoredump: "systemd_coredump",
 }
 
 func (k SpanKind) String() string {
@@ -44,6 +50,10 @@ func (k *SpanKind) UnmarshalText(b []byte) error {
 		*k = SpanWatchdog
 	case "gc_storm":
 		*k = SpanGCStorm
+	case "kernel_panic":
+		*k = SpanKernelPanic
+	case "systemd_coredump":
+		*k = SpanSystemdCoredump
 	default:
 		*k = SpanUnknown
 	}
