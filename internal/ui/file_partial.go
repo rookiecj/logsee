@@ -621,24 +621,31 @@ func (m *Model) cmdLoadFileWindowAroundBottom(globalLine int64, vh int) tea.Cmd 
 	if vh < 1 {
 		vh = 1
 	}
-	win := 2 * vh
-	first := globalLine - int64(vh) + 1
+	// Back-skewed window. The bottom-pin caller wants (vh-1) filtered
+	// rows above the cursor. With no filter, vh raw lines backward
+	// suffice (1 row per line). With a filter active, fidx is sparser
+	// than Seq space — at level:D density ~1/3 a 44-line window only
+	// yields ~7 matches above the cursor, so the cursor parks
+	// mid-viewport (user report). Extending backward to 10*vh raw
+	// lines accommodates filter densities down to ~1/10.
+	backward := int64(vh)
+	if !m.prog.Empty() {
+		backward = int64(10 * vh)
+	}
+	first := globalLine - backward + 1
 	if first < 1 {
 		first = 1
 	}
-	last := first + int64(win) - 1
+	last := globalLine + int64(vh)
 	tot := prov.TotalLines()
 	if last > tot {
 		last = tot
-		first = last - int64(win) + 1
-		if first < 1 {
-			first = 1
-		}
 	}
 	fl := first
 	ll := last
 	// Bottom pin: cursor at globalLine, viewport top at globalLine-(vh-1). applyFileWindowLoaded
-	// infers preferBottom from viewTopSeq < cursorSeq.
+	// infers preferBottom from viewTopSeq < cursorSeq and re-anchors
+	// viewTopSeq through fidx so the cursor reliably reaches the bottom row.
 	m.cursorSeq = globalLine
 	top := globalLine - int64(vh-1)
 	if top < 1 {

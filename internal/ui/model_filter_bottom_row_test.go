@@ -122,15 +122,21 @@ func TestFilterNavDown_CursorStaysOnBottomRowWhenFilterSparse(t *testing.T) {
 // query committed, continuous `n` (next highlight hit) lands the cursor
 // mid-viewport after a disk-scan jump.
 //
-// Pre-fix: cmdLoadFileWindowAroundBottom set viewTopSeq = globalLine -
-// (vh-1) in raw file-line Seq space. applyFileWindowLoaded then fed
-// that to syncIdxFromSeq, which — because fidx is sparser than Seq
-// space under a filter — resolved the seq to an idx just a few
-// filtered rows above the cursor, anchoring the viewport top too high
-// and leaving the cursor in the middle.
+// Critical: the simulated window must match what
+// cmdLoadFileWindowAroundBottom actually fetches —
+// `[foundSeq-vh+1 .. foundSeq+vh]`. A full-file load hides the bug
+// because the ring then contains every match the bottom-row placement
+// needs, which isn't what happens in production.
 //
-// Post-fix: applyFileWindowLoaded re-anchors viewTopSeq through fidx
-// when preferBottom is set.
+// Pre-fix: the small 2*vh raw-line window holds only ~2*vh*density
+// filtered matches (≈15 for density=3, vh=22), with the cursor roughly
+// in the middle of that filtered slice. applyFileWindowLoaded's
+// viewTopSeq = cursorSeq - (vh-1) in Seq space drops into fidx[0], so
+// scrollTop=0 and cursor row = cursorIdx ≈ 7 (middle of the viewport).
+//
+// Post-fix: cmdLoadFileWindowAroundBottom loads a back-skewed window
+// large enough for the filter to deliver (vh-1) matches above the
+// cursor; applyFileWindowLoaded re-anchors viewTopSeq through fidx.
 func TestSearchNavNext_CursorStaysOnBottomRowWhenFilterSparse(t *testing.T) {
 	m := newFilePartialModelForSeq(t)
 	vh := m.viewportH()
@@ -145,26 +151,32 @@ func TestSearchNavNext_CursorStaysOnBottomRowWhenFilterSparse(t *testing.T) {
 	m.prog = p
 	m.appliedFilter = "match"
 
-	// 1..900 records, every 3rd is a filtered-in "match". Dense enough
-	// that one viewport of matches occupies >> vh file lines, so raw-seq
-	// arithmetic and fidx arithmetic diverge sharply.
+	// File total = 10_000 lines; every 3rd seq is a "match".
 	const density = 3
-	const total = 900
-	recs := make([]domain.Line, 0, total)
-	for s := int64(1); s <= total; s++ {
+	m.fileOffsets = make([]int64, 10_000)
+	m.fileTotalLines = 10_000
+
+	// Simulate what cmdLoadFileWindowAroundBottom loads: a window sized
+	// by that function around foundSeq. To mirror production we replay
+	// the window bounds the call would produce, then hand the raw
+	// records to applyFileWindowLoaded.
+	const foundSeq = int64(600)
+	// cmdLoadFileWindowAroundBottom currently reads
+	// [foundSeq-vh+1 .. foundSeq+vh]; post-fix it may read more. The
+	// test emulates the production fetch by calling the command and
+	// reading back the bounds it expects.
+	first, last := bottomWindowBounds(foundSeq, int64(vh), int64(m.fileTotalLines), m.prog)
+	recs := make([]domain.Line, 0, last-first+1)
+	for s := first; s <= last; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if s%density == 0 {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
 		recs = append(recs, domain.Line{Seq: s, Text: text})
 	}
-	m.fileOffsets = make([]int64, 10_000)
-	m.fileTotalLines = 10_000
 
-	// Simulate SearchScanResult arriving with a found seq deep in the
-	// file: the handler invokes cmdLoadFileWindowAroundBottom, which
-	// pins cursor to that seq on the viewport's bottom row.
-	const foundSeq = int64(600) // must be a match (600 % 3 == 0)
+	// cmdLoadFileWindowAroundBottom pins cursor to foundSeq and sets the
+	// top anchor above it in Seq space.
 	m.cursorSeq = foundSeq
 	top := foundSeq - int64(vh-1)
 	if top < 1 {
@@ -172,17 +184,113 @@ func TestSearchNavNext_CursorStaysOnBottomRowWhenFilterSparse(t *testing.T) {
 	}
 	m.viewTopSeq = top
 
-	// Window load result arrives: applyFileWindowLoaded merges and
-	// resolves scroll state from the cursor/view anchors.
-	m.applyFileWindowLoaded(recs, 1)
+	// Window load result arrives.
+	m.applyFileWindowLoaded(recs, first)
 
 	fidx := m.filteredIndices()
 	row := m.cursorIdx - m.scrollTop
 	if row != vh-1 {
-		t.Errorf("cursor row after search nav-next disk load: got %d, want %d (bottom) — cursorIdx=%d scrollTop=%d fidxLen=%d",
-			row, vh-1, m.cursorIdx, m.scrollTop, len(fidx))
+		t.Errorf("cursor row after search nav-next disk load: got %d, want %d (bottom) — cursorIdx=%d scrollTop=%d fidxLen=%d window=[%d..%d]",
+			row, vh-1, m.cursorIdx, m.scrollTop, len(fidx), first, last)
 	}
 	if m.buf.At(fidx[m.cursorIdx]).Seq != foundSeq {
 		t.Errorf("cursor should land on foundSeq=%d, got %d", foundSeq, m.buf.At(fidx[m.cursorIdx]).Seq)
+	}
+}
+
+// recordingProvider captures the most recent Fetch bounds so the test
+// can assert cmdLoadFileWindowAroundBottom reads a back-skewed window
+// when a filter is active. The records themselves come from a fixed
+// density-1/3 pattern so the test stays deterministic.
+type recordingProvider struct {
+	total     int64
+	lastFirst int64
+	lastLast  int64
+}
+
+func (p *recordingProvider) Fetch(first, last int64) ([]domain.Line, error) {
+	p.lastFirst, p.lastLast = first, last
+	recs := make([]domain.Line, 0, last-first+1)
+	for s := first; s <= last; s++ {
+		text := "other " + strconv.FormatInt(s, 10)
+		if s%3 == 0 {
+			text = "match " + strconv.FormatInt(s, 10)
+		}
+		recs = append(recs, domain.Line{Seq: s, Text: text})
+	}
+	return recs, nil
+}
+
+func (p *recordingProvider) TotalLines() int64                     { return p.total }
+func (p *recordingProvider) FileSize() int64                       { return p.total * 80 }
+func (p *recordingProvider) EstimateBytes(first, last int64) int64 { return (last - first + 1) * 80 }
+
+// bottomWindowBounds mirrors cmdLoadFileWindowAroundBottom's window math
+// so the test exercises the same fetch size as production. Keep this
+// synchronised with the implementation — if the production window size
+// changes, update this helper too.
+func bottomWindowBounds(foundSeq, vh, total int64, prog filter.Program) (first, last int64) {
+	backward := vh
+	if !prog.Empty() {
+		// When a filter is active the raw-line density may be far below
+		// one match per line; extending the lookback lets the filtered
+		// fidx still carry (vh-1) matches above the cursor.
+		backward = 10 * vh
+	}
+	first = foundSeq - backward + 1
+	if first < 1 {
+		first = 1
+	}
+	last = foundSeq + vh
+	if last > total {
+		last = total
+	}
+	return first, last
+}
+
+// TestLoadFileWindowAroundBottom_FilterExtendsBackward locks in the
+// production window math: cmdLoadFileWindowAroundBottom must fetch a
+// back-skewed window when a filter is active, otherwise the downstream
+// applyFileWindowLoaded cannot place the cursor at the bottom row
+// (there aren't enough filtered-in matches above the cursor in a
+// raw-2*vh slice). Pair this test with the end-to-end bottom-row
+// assertion above so either piece fails loudly on regression.
+func TestLoadFileWindowAroundBottom_FilterExtendsBackward(t *testing.T) {
+	m := newFilePartialModelForSeq(t)
+	vh := m.viewportH()
+	if vh < 4 {
+		t.Fatalf("vh too small for scenario: %d", vh)
+	}
+	p, err := filter.Parse("match")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.prog = p
+	m.appliedFilter = "match"
+
+	const total = int64(10_000)
+	m.fileTotalLines = int(total)
+	m.fileOffsets = make([]int64, total)
+	prov := &recordingProvider{total: total}
+	m.SetWindowProvider(prov)
+
+	const foundSeq = int64(600)
+	cmd := m.cmdLoadFileWindowAroundBottom(foundSeq, vh)
+	if cmd == nil {
+		t.Fatal("expected non-nil cmd")
+	}
+	_ = cmd()
+
+	// Under filter: backward extent must be at least 3*vh raw lines so
+	// the density-1/3 match density still yields >= vh-1 matches above
+	// the cursor. 10*vh is the implementation's current choice.
+	backwardSpan := foundSeq - prov.lastFirst + 1
+	minBackward := int64(3 * vh)
+	if backwardSpan < minBackward {
+		t.Errorf("backward window span = %d raw lines, want >= %d (%dx vh) so filter-sparse fidx can fill (vh-1) above cursor",
+			backwardSpan, minBackward, minBackward/int64(vh))
+	}
+	if prov.lastLast < foundSeq {
+		t.Errorf("window must include foundSeq: last=%d, foundSeq=%d", prov.lastLast, foundSeq)
 	}
 }
