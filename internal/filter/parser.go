@@ -243,11 +243,31 @@ func (p Program) Empty() bool {
 	return len(p.Plain) == 0 && len(p.Tags) == 0
 }
 
-// Match returns whether line satisfies the program under ignoreCase and fmt (for reserved tag level).
+// MatchContext carries optional per-line context beyond the raw text. Tags
+// that need external state (today: `anomaly:*`) consult this. A zero value
+// disables those tags — they never match — while the rest of Program
+// evaluates identically to a context-free Match.
+type MatchContext struct {
+	// Seq is the 1-based line number; reserved for future context tags.
+	Seq int64
+	// Finding is the canonical snake_case name of the detected anomaly
+	// (e.g. "anr", "fatal_java"). Empty means the line has no finding.
+	Finding string
+}
+
+// Match returns whether line satisfies the program under ignoreCase and fmt.
+// It is equivalent to MatchWithContext(line, MatchContext{}, ...) and exists
+// for callers that do not carry per-line context.
 func Match(line string, p Program, ignoreCase bool, fmt LogFormat) bool {
+	return MatchWithContext(line, MatchContext{}, p, ignoreCase, fmt)
+}
+
+// MatchWithContext is like Match but also resolves context tags (e.g.
+// `anomaly:anr`, `anomaly:any`) against ctx.
+func MatchWithContext(line string, ctx MatchContext, p Program, ignoreCase bool, fmt LogFormat) bool {
 	if len(p.Alts) > 0 {
 		for _, a := range p.Alts {
-			if Match(line, a, ignoreCase, fmt) {
+			if MatchWithContext(line, ctx, a, ignoreCase, fmt) {
 				return true
 			}
 		}
@@ -274,18 +294,50 @@ func Match(line string, p Program, ignoreCase bool, fmt LogFormat) bool {
 		}
 	}
 	for _, tc := range p.Tags {
-		if !evalTagClause(line, tc, ignoreCase, fmt) {
+		if !evalTagClause(line, ctx, tc, ignoreCase, fmt) {
 			return false
 		}
 	}
 	return true
 }
 
-func evalTagClause(line string, tc tagClause, ignoreCase bool, fmt LogFormat) bool {
-	if tc.keyLower == "level" {
+func evalTagClause(line string, ctx MatchContext, tc tagClause, ignoreCase bool, fmt LogFormat) bool {
+	switch tc.keyLower {
+	case "level":
 		return evalLevelClause(line, tc, ignoreCase, fmt)
+	case "anomaly":
+		return evalAnomalyClause(ctx, tc)
 	}
 	return evalGenericTagClause(line, tc, ignoreCase)
+}
+
+// evalAnomalyClause matches ctx.Finding against the tag's include/exclude
+// values. The sentinel "any" matches when any finding is present; all
+// other values compare case-insensitively against the FindingKind's
+// canonical snake_case name (e.g. "anr", "fatal_java").
+func evalAnomalyClause(ctx MatchContext, tc tagClause) bool {
+	have := ctx.Finding
+	for _, ex := range tc.exclude {
+		if matchesAnomalyValue(have, ex) {
+			return false
+		}
+	}
+	if len(tc.include) == 0 {
+		return true
+	}
+	for _, in := range tc.include {
+		if matchesAnomalyValue(have, in) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesAnomalyValue(have, want string) bool {
+	if strings.EqualFold(want, "any") {
+		return have != ""
+	}
+	return strings.EqualFold(have, want)
 }
 
 func evalLevelClause(line string, tc tagClause, ignoreCase bool, fmt LogFormat) bool {

@@ -15,12 +15,24 @@ type SeqPredicate func(rec domain.Line) bool
 
 // filterPredicate closes over the currently applied filter program so a single predicate can be
 // reused across ring scans and disk scans without reading Model state from a goroutine.
+//
+// The findings map is snapshotted by reference so that `anomaly:*` filter
+// clauses resolve against the classifier's current state. The map is owned
+// by the UI goroutine (applyIncomingLines) and predicates run on the same
+// goroutine, so reads are safe.
 func (m *Model) filterPredicate() SeqPredicate {
 	prog := m.prog
 	ignoreCase := m.ignoreCase
 	logFmt := m.effectiveLogFormat()
+	findings := m.findings
 	return func(rec domain.Line) bool {
-		return filter.Match(rec.Text, prog, ignoreCase, logFmt)
+		ctx := filter.MatchContext{Seq: rec.Seq}
+		if findings != nil {
+			if k, ok := findings[rec.Seq]; ok {
+				ctx.Finding = k.String()
+			}
+		}
+		return filter.MatchWithContext(rec.Text, ctx, prog, ignoreCase, logFmt)
 	}
 }
 
