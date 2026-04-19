@@ -1,0 +1,106 @@
+04-19 14:23:10.004  1245  1245 I SystemServer: Entered the Android system server!
+04-19 14:23:10.412  1245  1245 I ActivityManager: System now ready
+04-19 14:23:12.001  1245  1245 I BootReceiver: Boot completed
+04-19 14:23:30.445  1245  1301 I ActivityManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.example.app/.MainActivity}
+04-19 14:23:40.012  1245  1301 I ActivityManager: Start proc 12345:com.example.app/u0a123 for activity {com.example.app/.MainActivity}
+04-19 14:23:40.089 12345 12345 I Zygote  : Process forked for com.example.app
+04-19 14:23:40.145 12345 12345 D ActivityThread: handleBindApplication: mBoundApplication.info.uid=10123
+04-19 14:23:40.234 12345 12345 I art     : Late-enabling -Xcheck:jni
+04-19 14:23:40.278 12345 12345 D NetworkSecurityConfig: No Network Security Config specified, using platform default
+04-19 14:23:40.301 12345 12345 D ExampleApp: onCreate(savedInstanceState=null)
+04-19 14:23:40.345 12345 12345 I ExampleApp: initializing analytics
+04-19 14:23:40.389 12345 12367 D HeapTaskDaemon: starting
+04-19 14:23:40.412 12345 12345 I ActivityManager: Displayed com.example.app/.MainActivity: +312ms
+04-19 14:23:40.523 12345 12345 D MainActivity: onStart
+04-19 14:23:41.001 12345 12345 D MainActivity: onResume
+04-19 14:23:41.120 12345 12345 V MainActivity: refreshUi()
+04-19 14:23:41.134 12345 12345 D SyncManager: state=IDLE last_sync=-1
+04-19 14:23:43.455 12345 12345 D MainActivity: user scrolled list to 12
+04-19 14:23:45.123 12345 12345 D MainActivity: user tapped "Sync"
+04-19 14:23:45.124 12345 12345 D MainActivity: starting sync on main thread (warn: blocks UI)
+04-19 14:23:45.126 12345 12345 D SyncWorker: step 1/8 fetch catalog
+04-19 14:23:46.301 12345 12345 D SyncWorker: step 2/8 decode response (8924 items)
+04-19 14:23:47.455 12345 12345 D SyncWorker: step 3/8 diff with local db
+04-19 14:23:48.301 12345 12345 W Choreographer: Skipped 61 frames!  The application may be doing too much work on its main thread.
+04-19 14:23:49.120 12345 12345 D SyncWorker: step 4/8 apply deletes (412)
+04-19 14:23:50.554 12345 12345 W Choreographer: Skipped 147 frames!  The application may be doing too much work on its main thread.
+04-19 14:23:51.008 12345 12345 D SyncWorker: step 5/8 apply inserts (3120)
+04-19 14:23:52.123 12345 12345 W MainActivity: still running sync...
+04-19 14:23:53.445 12345 12345 D SyncWorker: step 6/8 rebuild indexes
+04-19 14:23:54.445 12345 12345 W Choreographer: Skipped 302 frames!  The application may be doing too much work on its main thread.
+04-19 14:23:55.001  1245  3301 I InputReader: Reconfiguring input devices. changes=0x00000010
+04-19 14:23:55.012 12345 12345 D SyncWorker: step 7/8 vacuum
+04-19 14:23:56.234 12345 12345 V MainActivity: heap_alloc=412MB rss=520MB
+04-19 14:23:57.100 12345 12345 W Choreographer: Skipped 481 frames!  The application may be doing too much work on its main thread.
+04-19 14:23:58.201  1245  3301 W InputDispatcher: channel 'com.example.app/com.example.app.MainActivity' ~ Consumer closed input channel or an error occurred. events=0x9
+04-19 14:23:58.202  1245  3301 E InputDispatcher: channel 'com.example.app/com.example.app.MainActivity' ~ Channel is unrecoverably broken and will be disposed!
+04-19 14:24:00.000  1245  3301 W InputDispatcher: Application is not responding: Window{6d2c3b0 u0 com.example.app/com.example.app.MainActivity}.  5000ms since event, 5001ms since wait started.
+04-19 14:24:00.001  1245  3301 I InputDispatcher: Window com.example.app/.MainActivity is unresponsive: 5000ms
+04-19 14:24:02.412 12345 12345 D SyncWorker: step 8/8 commit
+04-19 14:24:05.412 12345 12345 W Choreographer: Skipped 621 frames!  The application may be doing too much work on its main thread.
+04-19 14:24:10.456  1245  1301 E ActivityManager: ANR in com.example.app (com.example.app/.MainActivity)
+04-19 14:24:10.456  1245  1301 E ActivityManager: PID: 12345
+04-19 14:24:10.456  1245  1301 E ActivityManager: Reason: Input dispatching timed out (Waiting because no window has focus but there is a focused application that may eventually add a window when it finishes starting up.)
+04-19 14:24:10.456  1245  1301 E ActivityManager: Parent: com.example.app/.MainActivity
+04-19 14:24:10.456  1245  1301 E ActivityManager: Frozen: false
+04-19 14:24:10.456  1245  1301 E ActivityManager: Load: 4.52 / 3.91 / 3.82
+04-19 14:24:10.456  1245  1301 E ActivityManager: ----- CPU usage from 0ms to 5412ms later (2024-04-19 14:24:05.044 to 2024-04-19 14:24:10.456) -----
+04-19 14:24:10.456  1245  1301 E ActivityManager:   45% 12345/com.example.app: 40% user + 5% kernel / faults: 312 minor
+04-19 14:24:10.456  1245  1301 E ActivityManager:     41% 12345/com.example.app: 37% user + 4% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager:     3% 12367/HeapTaskDaemon: 2% user + 1% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager:     1% 12371/RenderThread: 0.8% user + 0.2% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager:   12% 1245/system_server: 8% user + 4% kernel / faults: 183 minor
+04-19 14:24:10.456  1245  1301 E ActivityManager:     4% 1301/Binder:1245_A: 3% user + 1% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager:     3% 3301/InputDispatcher: 2% user + 1% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager:   5% 890/surfaceflinger: 3% user + 2% kernel / faults: 45 minor
+04-19 14:24:10.456  1245  1301 E ActivityManager:   2% 1123/logd: 1% user + 1% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager:   1% 1067/kswapd0: 0% user + 1% kernel
+04-19 14:24:10.456  1245  1301 E ActivityManager: 62% TOTAL: 45% user + 12% kernel + 2% iowait + 3% irq
+04-19 14:24:11.002  1245  1301 I ActivityManager: Dumping to /data/anr/anr_2024-04-19-14-24-11-001
+04-19 14:24:11.104  1245  1301 I ActivityManager: Collecting stacks for pid 12345
+04-19 14:24:11.201  1245  1301 I ActivityManager: Wrote stack traces to '/data/anr/anr_2024-04-19-14-24-11-001'
+04-19 14:24:11.301  1245  1301 I ActivityManager: Collecting stacks for pid 1245
+04-19 14:24:11.305  1245  1301 I DropBoxManagerService: add tag=data_app_anr isTagEnabled=true flags=0x2
+04-19 14:24:11.412  1245  1301 I DropBoxManagerService: Dropping last entry for tag data_app_anr to fit quota
+04-19 14:24:11.523 12345 12345 D SyncWorker: sync done in 5397ms (too late)
+04-19 14:24:11.567 12345 12345 D MainActivity: hiding spinner
+04-19 14:24:12.001 12345 12345 I ActivityManager: Killing 12345:com.example.app/u0a123 (adj 906): anr
+04-19 14:24:12.078 12345 12345 I art     : Debugger is no longer active
+04-19 14:24:12.101  1245  1245 I ActivityManager: Process com.example.app (pid 12345) has died: cch+99 CEM
+04-19 14:24:12.102  1245  1245 W ActivityManager: cleanUpApplicationRecord -- 12345
+04-19 14:24:12.201  1245  1245 I ActivityManager: Force removing ActivityRecord{6d2c3b0 u0 com.example.app/.MainActivity t42}: app died, no saved state
+04-19 14:24:12.345  1245  3421 W ActivityTaskManager: Force-removing child win Window{abc u0 com.example.app/.MainActivity} from container ActivityRecord{...}
+04-19 14:24:12.456  1245  3421 I WindowManager: WIN DEATH: Window{abc u0 com.example.app/.MainActivity}
+04-19 14:24:12.512  1245  1245 I libprocessgroup: Successfully killed process cgroup uid 10123 pid 12345 in 0ms
+04-19 14:24:13.001  1245  1245 I ActivityManager: Start proc 12901:com.example.app/u0a123 for recentstask {com.example.app/.MainActivity}
+04-19 14:24:13.102 12901 12901 I Zygote  : Process forked for com.example.app
+04-19 14:24:13.201 12901 12901 D ActivityThread: handleBindApplication: mBoundApplication.info.uid=10123
+04-19 14:24:13.301 12901 12901 D ExampleApp: onCreate(savedInstanceState=Bundle[{android:viewHierarchyState=...}])
+04-19 14:24:13.445 12901 12901 I ActivityManager: Displayed com.example.app/.MainActivity: +245ms
+04-19 14:24:13.523 12901 12901 D MainActivity: onStart
+04-19 14:24:13.601 12901 12901 D MainActivity: onResume (restored from crash)
+04-19 14:24:13.712 12901 12901 V MainActivity: refreshUi()
+04-19 14:24:14.002 12901 12901 D SyncManager: state=IDLE last_sync=1713507850000
+04-19 14:24:15.123  1245  1301 I ActivityManager: Start foreground service intent for pid 12901
+04-19 14:24:16.045 12901 12901 D MainActivity: user dismissed ANR-recovery banner
+04-19 14:24:18.002  1245  1245 I GnssLocationProvider: satellites: 5/12 (hdop 1.2)
+04-19 14:24:20.100  1245  1245 I ConnectivityService: EVENT_NETWORK_TESTED: Network [100] WIFI: pass validation
+04-19 14:24:22.001 12901 12901 D MainActivity: user scrolled list to 12
+04-19 14:24:24.412 12901 12901 D MainActivity: user tapped "Settings"
+04-19 14:24:24.523 12901 12901 D SettingsFragment: onCreateView
+04-19 14:24:25.002 12901 12901 D SettingsFragment: loaded 18 preferences in 478ms
+04-19 14:24:26.101 12901 12901 V MainActivity: idle
+04-19 14:24:27.001  1245  3301 I InputReader: Device reconfigured; resetting dispatch
+04-19 14:24:28.123 12901 12901 D MainActivity: user tapped back
+04-19 14:24:28.234 12901 12901 D SettingsFragment: onDestroyView
+04-19 14:24:29.045 12901 12901 D MainActivity: onPause
+04-19 14:24:29.120 12901 12901 D MainActivity: onStop
+04-19 14:24:29.245 12901 12901 I ActivityManager: app moved to background
+04-19 14:24:30.412  1245  3421 I ActivityManager: ActivityRecord{6d2c3b0 u0 com.example.app/.MainActivity} idle
+04-19 14:24:32.001  1245  1245 I BatteryService: battery level=87 plugged=USB
+04-19 14:24:33.102 12901 12901 D MainActivity: onStart (restored from recents)
+04-19 14:24:33.201 12901 12901 D MainActivity: onResume
+04-19 14:24:35.001  1245  1245 I NetworkStats: recorded stats for uid 10123 (rx=8912 tx=1234)
+04-19 14:24:36.078 12901 12901 V ExampleApp: analytics flush (12 events)
+04-19 14:24:38.112  1245  1245 D ConnectivityService: reportNetworkConnectivity(100, true) by 10123
+04-19 14:24:40.201  1245  1245 I ActivityManager: system ready, finishing pending work

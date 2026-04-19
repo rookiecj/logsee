@@ -1,0 +1,101 @@
+04-19 16:40:00.001  1245  1245 I SystemServer: Entered the Android system server!
+04-19 16:40:00.412  1245  1245 I ActivityManager: System now ready
+04-19 16:40:02.001  1245  1245 I BootReceiver: Boot completed
+04-19 16:40:10.412  1245  1301 I ActivityManager: START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.example.launcher/.Home}
+04-19 16:40:12.001  1245  1301 I ActivityManager: Start proc 18901:com.example.launcher/u0a127 for activity {com.example.launcher/.Home}
+04-19 16:41:30.145  1245  1245 I PowerManagerService: Waking up from sleep (uid 10127 reason=android.policy:POWER)
+04-19 16:42:10.201  1245  1245 I DreamManagerService: Entering dream
+04-19 16:42:55.102  1245  1245 I PowerManagerService: Sleeping
+04-19 16:43:30.401  1245  1245 I PowerManagerService: Waking up (uid 10127)
+04-19 16:44:00.012  1245  3456 I ActivityManager: Start proc 19012:com.example.target/u0a128 for service {com.example.target/.SyncService}
+04-19 16:44:20.412  1245  3456 D PackageManagerService: updatePackageInternal com.example.target
+04-19 16:44:45.001  1245  3456 W AppOps  : Noting op not finished: uid 10128 pkg com.example.target code 26
+04-19 16:45:01.201  1245  3456 I AppOps  : finishOperation (uid 10128 pkg com.example.target code 26 duration=16203ms)
+04-19 16:45:10.001  1245  3456 D PackageManagerService: updatePackageInternal com.example.target
+04-19 16:45:10.102  1245  1245 I BatteryStatsService: noteEvent(name=com.example.target:start)
+04-19 16:45:10.201  1245  1245 I ConnectivityService: EVENT_NETWORK_TESTED: Network [100] WIFI: pass validation
+04-19 16:45:10.312  1245  1245 I NetworkStats: recorded stats for uid 10128 (rx=412 tx=56)
+04-19 16:45:10.402  1245  1301 I ActivityManager: bindService u0 com.example.target/.SyncService
+04-19 16:45:10.501  1245  1301 I ActivityManager: foregroundServiceType=1 for com.example.target
+04-19 16:45:10.612  1245  3456 D JobSchedulerService: enqueued job 9001 for com.example.target (network=any)
+04-19 16:45:10.702  1245  3456 I NotificationService: enqueueNotification for com.example.target tag=null id=1
+04-19 16:45:10.812  1245  3456 I ActivityManager: Dispatching activity lifecycle to com.example.target
+04-19 16:45:10.842  1245  3456 V ActivityManager: lifecycle msg: RESUMED -> PAUSED
+04-19 16:45:10.878  1245  3456 D InputManager: injectInputEvent: inject source=0x1002 sync=WAIT_FOR_FINISHED
+04-19 16:45:10.912  1245  3456 I AppOps  : Noting op started: uid 10128 pkg com.example.target code 0
+04-19 16:45:10.945  1245  3456 D BinderProxy: attempting transact code=0x12 flags=0x0 from uid 10128
+04-19 16:45:10.978  1245  3456 W BinderProxy: slow transact 33ms from uid 10128 code=0x12
+04-19 16:45:11.001  1245  3456 E System  : ******************************************
+04-19 16:45:11.001  1245  3456 E System  : Error reporting crash
+04-19 16:45:11.001  1245  3456 E System  : java.lang.RuntimeException: Bad system state while handling Binder transaction
+04-19 16:45:11.001  1245  3456 E System  :     at com.android.server.SystemService.dumpInternal(SystemService.java:412)
+04-19 16:45:11.001  1245  3456 E System  :     at com.android.server.SystemServiceManager.dumpAllServices(SystemServiceManager.java:239)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime: *** FATAL EXCEPTION IN SYSTEM PROCESS: Binder:1245_A
+04-19 16:45:11.123  1245  3456 E AndroidRuntime: java.lang.NullPointerException: Attempt to invoke virtual method 'int com.example.SomeHelper.validate(java.lang.String)' on a null object reference
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at com.android.server.am.ActivityManagerService.handleIncomingUser(ActivityManagerService.java:12345)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at com.android.server.am.ActivityManagerService.startActivityAsUser(ActivityManagerService.java:5412)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at com.android.server.wm.ActivityTaskManagerService.startActivityAsUser(ActivityTaskManagerService.java:1234)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at android.app.IActivityTaskManager$Stub.onTransact(IActivityTaskManager.java:987)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at android.os.Binder.execTransactInternal(Binder.java:1285)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at android.os.Binder.execTransact(Binder.java:1234)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime: Caused by: java.lang.IllegalStateException: Package manager not ready
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at com.android.server.pm.PackageManagerService.checkValid(PackageManagerService.java:4321)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at com.android.server.pm.PackageManagerService.getPackageInfo(PackageManagerService.java:3210)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     at com.example.SomeHelper.<init>(SomeHelper.java:17)
+04-19 16:45:11.123  1245  3456 E AndroidRuntime:     ... 12 more
+04-19 16:45:11.134  1245  1245 I Process : Sending signal. PID: 1245 SIG: 9
+04-19 16:45:11.189  1245  3456 E AndroidRuntime: Error reporting WTF
+04-19 16:45:11.189  1245  3456 E AndroidRuntime: java.lang.NullPointerException: system_server not yet booted
+04-19 16:45:11.189  1245  3456 E AndroidRuntime:     at com.android.internal.os.RuntimeInit.wtf(RuntimeInit.java:189)
+04-19 16:45:11.189  1245  3456 E AndroidRuntime:     at android.util.Log.wtf(Log.java:345)
+04-19 16:45:11.212  1245  3421 W Watchdog: *** WATCHDOG KILLING SYSTEM PROCESS: Blocked in handler on main (main)
+04-19 16:45:11.212  1245  3421 W Watchdog: main annotated stack trace:
+04-19 16:45:11.212  1245  3421 W Watchdog:     at com.android.server.am.ActivityManagerService.waitForNetworkStateUpdate(ActivityManagerService.java:2101)
+04-19 16:45:11.212  1245  3421 W Watchdog:     at com.android.server.ServiceThread.run(ServiceThread.java:74)
+04-19 16:45:11.345  1145  1145 I Zygote  : Process 1245 exited due to signal 9 (Killed)
+04-19 16:45:11.456  1145  1145 E Zygote  : System server died with signal 9; rebooting
+04-19 16:45:11.567  1145  1145 I Zygote  : Accepting command socket connections
+04-19 16:45:12.001  1145  1145 I Zygote  : Preloading classes...
+04-19 16:45:12.512  1145  1145 I Zygote  : ...preloaded 8192 classes in 511ms
+04-19 16:45:12.712  1145  1145 I Zygote  : Preloading resources...
+04-19 16:45:13.201  1145  1145 I Zygote  : ...preloaded 512 resources in 489ms
+04-19 16:45:13.512  1145  1145 I Zygote  : System server process 2301 has been created
+04-19 16:45:13.612  2301  2301 I SystemServer: Entered the Android system server!
+04-19 16:45:13.712  2301  2301 I SystemServer: Phase: 100
+04-19 16:45:13.812  2301  2301 I SystemServer: StartActivityManager
+04-19 16:45:13.912  2301  2301 I ActivityManager: Memory class: 256
+04-19 16:45:14.012  2301  2301 I SystemServer: StartPowerManager
+04-19 16:45:14.112  2301  2301 I SystemServer: InitPowerManagement
+04-19 16:45:14.212  2301  2301 I SystemServer: StartRecoverySystemService
+04-19 16:45:14.312  2301  2301 I SystemServer: StartLightsService
+04-19 16:45:14.412  2301  2301 I SystemServer: StartPackageManagerService
+04-19 16:45:15.612  2301  2301 I SystemServer: StartUserManagerService
+04-19 16:45:15.812  2301  2301 I SystemServer: InitAttributeCache
+04-19 16:45:16.012  2301  2301 I SystemServer: StartSensorService
+04-19 16:45:16.212  2301  2301 I SystemServer: Phase: 480
+04-19 16:45:16.412  2301  2301 I ActivityManager: System now ready
+04-19 16:45:16.612  2301  2301 I BootReceiver: Boot completed
+04-19 16:45:17.112  2301  2301 I DropBoxManagerService: add tag=system_server_crash isTagEnabled=true flags=0x2
+04-19 16:45:17.312  2301  2301 I DropBoxManagerService: add tag=system_server_wtf isTagEnabled=true flags=0x2
+04-19 16:45:17.512  2301  2301 I BootReceiver: Copying /data/anr/anr_2024-04-19-16-45-11-211 to DropBox (system_server_watchdog)
+04-19 16:45:18.001  2301  2401 I ActivityManager: Start proc 19301:com.example.launcher/u0a127 for activity {com.example.launcher/.Home}
+04-19 16:45:18.234 19301 19301 I Zygote  : Process forked for com.example.launcher
+04-19 16:45:18.356 19301 19301 D ActivityThread: handleBindApplication
+04-19 16:45:18.445 19301 19301 I Launcher: onCreate (restored from crash)
+04-19 16:45:18.567 19301 19301 I ActivityManager: Displayed com.example.launcher/.Home: +334ms
+04-19 16:45:19.001  2301  2301 I AlarmManager: rescheduling 42 alarms after system_server restart
+04-19 16:45:19.412  2301  2301 I ConnectivityService: reconnecting networks after system_server restart
+04-19 16:45:20.012  2301  2301 I NetworkStats: recovered stats from journal
+04-19 16:45:20.412  2301  2301 I WifiService: scanning for networks
+04-19 16:45:21.102  2301  2301 I WifiService: CMD_START_SCAN source=system_server
+04-19 16:45:22.001  2301  2301 I LocationManagerService: restoring location providers
+04-19 16:45:22.412  2301  2301 I ConnectivityService: EVENT_NETWORK_TESTED: Network [100] WIFI: pass validation
+04-19 16:45:23.001  2301  2401 I ActivityManager: foreground activity is com.example.launcher/.Home
+04-19 16:45:24.012  2301  2301 I BatteryService: battery level=78 plugged=USB
+04-19 16:45:25.412  2301  2301 I system_server: heap_alloc=312MB rss=820MB
+04-19 16:45:27.001  2301  2301 I AlarmManager: Next alarm at 2024-04-19 16:55:00 for tag com.example.launcher.REFRESH
+04-19 16:45:30.412  2301  2301 I ActivityManager: fully recovered from previous crash
+04-19 16:45:32.001  2301  2301 I DropBoxManagerService: Dropping last entry for tag data_app_crash to fit quota
+04-19 16:45:35.412  2301  2301 I PackageManagerService: background dexopt pass starting
+04-19 16:45:38.012  2301  2301 I PackageManagerService: background dexopt completed for 18 packages in 2600ms
+04-19 16:45:42.100  2301  2301 I ActivityManager: nothing to do, idle

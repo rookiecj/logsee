@@ -1,0 +1,102 @@
+04-19 15:09:50.001  1245  1245 I ActivityManager: Foreground activities changed: com.example.native
+04-19 15:09:55.001  1245  1301 I ActivityManager: Start proc 15678:com.example.native/u0a125 for activity {com.example.native/.MainActivity}
+04-19 15:09:55.089 15678 15678 I Zygote  : Process forked for com.example.native
+04-19 15:09:55.134 15678 15678 I art     : Late-enabling -Xcheck:jni
+04-19 15:09:55.189 15678 15678 D ExampleNative: onCreate
+04-19 15:09:55.201 15678 15678 D ExampleNative: loading libnative.so
+04-19 15:09:55.256 15678 15678 I linker  : Linking libnative.so
+04-19 15:09:55.301 15678 15678 I native  : JNI_OnLoad called
+04-19 15:09:55.345 15678 15678 D native  : build_id=fedcba987654 version=1.2.3
+04-19 15:09:55.412 15678 15678 D ExampleNative: ready
+04-19 15:09:55.501 15678 15678 I ActivityManager: Displayed com.example.native/.MainActivity: +412ms
+04-19 15:09:56.002 15678 15678 D MainActivity: onResume
+04-19 15:10:10.001 15678 15678 V MainActivity: user tapped "Run"
+04-19 15:10:10.002 15678 15678 D MainActivity: dispatching worker on pool thread
+04-19 15:10:10.100 15678 15691 I native-worker: started
+04-19 15:10:10.201 15678 15691 D native-worker: allocating 1MB buffer
+04-19 15:10:10.256 15678 15691 D native  : populating table from input (size=8192)
+04-19 15:10:10.312 15678 15691 V native  : row 0 ok
+04-19 15:10:20.001 15678 15678 D MainActivity: user tapped "Process"
+04-19 15:10:20.002 15678 15678 D MainActivity: calling into native doWork()
+04-19 15:10:20.100 15678 15691 D native  : entering doWork(ptr=0x7ff123abcd len=-1)
+04-19 15:10:20.105 15678 15691 W native  : doWork: unexpected len=-1 but proceeding
+04-19 15:10:22.001  1245  1301 I ActivityManager: Process com.example.native (pid 15678) has died: sig 11
+04-19 15:10:22.100  4567  4567 F DEBUG   : *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+04-19 15:10:22.100  4567  4567 F DEBUG   : Build fingerprint: 'samsung/universal2100/exynos:13/TQ3A.230705.001/20230715:user/release-keys'
+04-19 15:10:22.100  4567  4567 F DEBUG   : Revision: '0'
+04-19 15:10:22.100  4567  4567 F DEBUG   : ABI: 'arm64'
+04-19 15:10:22.100  4567  4567 F DEBUG   : Processor: 5
+04-19 15:10:22.100  4567  4567 F DEBUG   : Timestamp: 2024-04-19 15:10:22.001+0900
+04-19 15:10:22.100  4567  4567 F DEBUG   : Process uptime: 27s
+04-19 15:10:22.100  4567  4567 F DEBUG   : Cmdline: com.example.native
+04-19 15:10:22.100  4567  4567 F DEBUG   : pid: 15678, tid: 15691, name: native-worker  >>> com.example.native <<<
+04-19 15:10:22.100  4567  4567 F DEBUG   : uid: 10125
+04-19 15:10:22.100  4567  4567 F DEBUG   : tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+04-19 15:10:22.100  4567  4567 F DEBUG   : pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+04-19 15:10:22.100  4567  4567 F DEBUG   : signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0
+04-19 15:10:22.100  4567  4567 F DEBUG   : Cause: null pointer dereference
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x0  0000000000000000  x1  0000007ff123abcd  x2  0000000000000042  x3  0000000000000001
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x4  0000000000000020  x5  0000007fa1b2c3d4  x6  0000000000000000  x7  0000000000000000
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x8  000000000000000f  x9  0000000000000000  x10 0000000000000001  x11 0000000000000002
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x12 0000000000000003  x13 0000000000000004  x14 0000000000000005  x15 0000000000000006
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x16 0000007fc12345ab  x17 0000007fc9876543  x18 0000007fb0001000  x19 0000007ff1234000
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x20 0000000000000000  x21 0000007fa9876abc  x22 0000007fb5555555  x23 0000000000000000
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x24 0000000000000000  x25 0000007fe4444444  x26 0000007fd3333333  x27 0000000000000000
+04-19 15:10:22.100  4567  4567 F DEBUG   :     x28 0000000000000000  x29 0000007fc2222222
+04-19 15:10:22.100  4567  4567 F DEBUG   :     lr  0000007fe0adb500  sp  0000007fc2222200  pc  0000007fe0adb54c  pst 0000000060000000
+04-19 15:10:22.100  4567  4567 F DEBUG   : backtrace:
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #00 pc 00000000000123f0  /apex/com.android.runtime/lib64/bionic/libc.so (strlen+32) (BuildId: abc123def456789a)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #01 pc 00000000000adb54  /data/app/~~abc==/com.example.native-xyz==/lib/arm64/libnative.so (doWork(char const*, int)+120) (BuildId: fedcba9876543210)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #02 pc 00000000000adff0  /data/app/~~abc==/com.example.native-xyz==/lib/arm64/libnative.so (Java_com_example_native_NativeLib_doWork+32) (BuildId: fedcba9876543210)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #03 pc 00000000002a5cc0  /apex/com.android.art/lib64/libart.so (art_quick_generic_jni_trampoline+144) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #04 pc 00000000002a0a34  /apex/com.android.art/lib64/libart.so (art_quick_invoke_stub+612) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #05 pc 0000000000310bb8  /apex/com.android.art/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+200) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #06 pc 00000000003f1234  /apex/com.android.art/lib64/libart.so (art::interpreter::ArtInterpreterToCompiledCodeBridge+192) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #07 pc 00000000003a5678  /apex/com.android.art/lib64/libart.so (bool art::interpreter::DoCall<false, false>(...)+488) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #08 pc 00000000003e2910  /apex/com.android.art/lib64/libart.so (MterpInvokeVirtual+712) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #09 pc 00000000002971d0  /apex/com.android.art/lib64/libart.so (mterp_op_invoke_virtual+16) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #10 pc 0000000000008b10  [anon:dalvik-classes.dex extracted in memory from /data/app/~~abc==/com.example.native-xyz==/base.apk] (com.example.native.NativeLib.doWork+0)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #11 pc 000000000032cafe  /apex/com.android.art/lib64/libart.so (art::interpreter::Execute+910) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #12 pc 0000000000330220  /apex/com.android.art/lib64/libart.so (art::interpreter::EnterInterpreterFromEntryPoint+180) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #13 pc 0000000000719f88  /apex/com.android.art/lib64/libart.so (artQuickToInterpreterBridge+844) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #14 pc 00000000002a5d7c  /apex/com.android.art/lib64/libart.so (art_quick_to_interpreter_bridge+92) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #15 pc 0000000000bc0fe4  /data/app/~~abc==/com.example.native-xyz==/oat/arm64/base.odex (art_jni_trampoline+100)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #16 pc 00000000002a0a34  /apex/com.android.art/lib64/libart.so (art_quick_invoke_stub+612) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #17 pc 000000000059b28c  /apex/com.android.art/lib64/libart.so (art::JValue art::InvokeWithVarArgs<...>+624) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #18 pc 0000000000517ed0  /apex/com.android.art/lib64/libart.so (art::Thread::CreateCallback+1332) (BuildId: 112233445566aabb)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #19 pc 00000000000b2cc4  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+264) (BuildId: abc123def456789a)
+04-19 15:10:22.100  4567  4567 F DEBUG   :       #20 pc 0000000000054b80  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+64) (BuildId: abc123def456789a)
+04-19 15:10:22.100  4567  4567 F DEBUG   :
+04-19 15:10:22.100  4567  4567 F DEBUG   : memory near x1 ([anon:libc_malloc]):
+04-19 15:10:22.100  4567  4567 F DEBUG   :     0000007ff123abcd 6c6c6148 6c6f2c6f 57202120 646c726f  Hello, World
+04-19 15:10:22.100  4567  4567 F DEBUG   :     0000007ff123abdd 00000000 00000000 00000000 00000000  ................
+04-19 15:10:22.100  4567  4567 F DEBUG   :     0000007ff123abed 00000000 00000000 00000000 00000000  ................
+04-19 15:10:22.100  4567  4567 F DEBUG   :     0000007ff123abfd 00000000 00000000 00000000 00000000  ................
+04-19 15:10:22.100  4567  4567 F DEBUG   :
+04-19 15:10:22.100  4567  4567 F DEBUG   : memory map (16 entries):
+04-19 15:10:22.100  4567  4567 F DEBUG   :     500000000-500001fff r--         0      2000  /apex/com.android.runtime/lib64/bionic/libc.so
+04-19 15:10:22.100  4567  4567 F DEBUG   :     500002000-50005ffff r-x      2000     5e000  /apex/com.android.runtime/lib64/bionic/libc.so (load bias 0x0)
+04-19 15:10:22.100  4567  4567 F DEBUG   :     500060000-5000617ff r--     60000      1800  /apex/com.android.runtime/lib64/bionic/libc.so
+04-19 15:10:22.100  4567  4567 F DEBUG   :     500061800-500062000 rw-     61800       800  /apex/com.android.runtime/lib64/bionic/libc.so
+04-19 15:10:22.200  1245  3421 W DropBoxManagerService: add tag=SYSTEM_TOMBSTONE isTagEnabled=true flags=0x2
+04-19 15:10:22.267  1245  3421 I tombstoned: received crash request for pid 15678
+04-19 15:10:22.301  1245  3421 I BootReceiver: Copying /data/tombstones/tombstone_00 to DropBox (SYSTEM_TOMBSTONE)
+04-19 15:10:22.345  1245  3421 I DropBoxManagerService: Dropping last entry for tag SYSTEM_TOMBSTONE to fit quota
+04-19 15:10:22.402  1245  1245 I ActivityManager: Process com.example.native (pid 15678) has died: cch+99 EMP
+04-19 15:10:22.501  1245  1245 W ActivityManager: cleanUpApplicationRecord -- 15678
+04-19 15:10:22.534  1245  1245 I ActivityManager: Force removing ActivityRecord{4f2a0c1 u0 com.example.native/.MainActivity t48}: app died, no saved state
+04-19 15:10:22.578  1245  3421 W ActivityTaskManager: Force-removing child win Window{deadbee u0 com.example.native/.MainActivity} from container ActivityRecord{...}
+04-19 15:10:22.601  1245  3421 I WindowManager: WIN DEATH: Window{deadbee u0 com.example.native/.MainActivity}
+04-19 15:10:22.634  1245  1245 I libprocessgroup: Successfully killed process cgroup uid 10125 pid 15678 in 0ms
+04-19 15:10:22.701  1245  3421 I CrashReporter: suppressed 1 duplicate tombstone within 60s window
+04-19 15:10:23.001  1245  1245 I ActivityTaskManager: sending RESULT_CANCELED to com.example.launcher
+04-19 15:10:23.302  1245  1245 I GnssLocationProvider: satellites: 7/12 (hdop 0.9)
+04-19 15:10:24.001  1145  1145 I Zygote  : Process 15678 terminated by signal 11
+04-19 15:10:25.002  1245  1301 I ActivityManager: system ready, finishing pending work
+04-19 15:10:26.012  1245  1245 I BatteryService: battery level=82 plugged=USB
+04-19 15:10:28.100  1245  1245 I NetworkStats: recorded stats for uid 10125 (rx=612 tx=88)
+04-19 15:10:30.200  1245  1245 D ConnectivityService: reportNetworkConnectivity(100, true) by system
+04-19 15:10:32.312  1245  1245 I AlarmManager: Next alarm at 2024-04-19 15:20:00 for tag com.example.launcher.REFRESH
+04-19 15:10:35.012  1245  3456 D PackageManagerService: scanning /data/app for updated packages
+04-19 15:10:38.101  1245  1245 I system_server: heap_alloc=210MB rss=612MB
+04-19 15:10:40.234  1245  1245 I ActivityManager: nothing to do, idle

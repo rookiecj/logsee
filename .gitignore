@@ -1,5 +1,6 @@
 bin/
 *.log
+!testdata/**/*.log
 /logsee
 # generated knowledge-graph outputs (rebuilt by post-commit hook)
 graphify-out/
