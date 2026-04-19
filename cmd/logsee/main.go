@@ -51,6 +51,7 @@ func (f *trackedIntFlag) Set(v string) error {
 }
 
 func main() {
+	exportAnomalies := flag.Bool("export-anomalies", false, "skip the TUI, run the anomaly pipeline over the input, and write detected Findings/Spans as JSONL to stdout (AI-analysis mode)")
 	outPath := flag.String("out", "", "append received lines to this file when reading from stdin; if empty with stdin, creates logsee-YYYYMMDD-HHMMSS.log in cwd. Ignored when reading from an input file (no duplicate on disk)")
 	maxLines := flag.Int("max-lines", 100_000, "maximum lines retained in memory")
 	ignoreCase := flag.Bool("ignore-case", false, "case-insensitive filter matching only; highlight search is always case-sensitive")
@@ -140,6 +141,14 @@ func main() {
 	if len(args) > 1 {
 		flag.Usage()
 		os.Exit(2)
+	}
+
+	if *exportAnomalies {
+		if err := runExportAnomalies(args); err != nil {
+			fmt.Fprintf(os.Stderr, "logsee: %v\n", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	input, inputLabel, closeInput, err := openInput(args)
