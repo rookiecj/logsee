@@ -341,7 +341,25 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 | v1.4.0 | Phase 5–6 | `logsee-ana` 실험 binary |
 | v1.5.0 | Phase 7 | `--export-anomalies` 정식 |
 | v1.6.0 | Phase 8 | MCP 서버 |
-| v1.7.0 | Phase 9–10 | TUI 통합 + 문서 |
+| v1.7.0 | Phase 9(plumbing)–10 | TUI 훅 + README/예제 |
+| v1.8.0 (예정) | Phase 9b | gutter 마커, `anomaly:*` 필터 DSL, `A` 토글, 상태바 카운트 |
+
+## 진행 상태 (2026-04-19)
+
+| Phase | 상태 | 주요 산출물 |
+|---|---|---|
+| 0 | ✅ | `internal/{domain,analysis,source,pipeline,store}` 스켈레톤 + `testdata/android/*.log` 3종 |
+| 1 | ✅ | Seq(alias), Level, LineFormat, Record, Span, Finding + SchemaVersion |
+| 2 | ✅ | `pipeline.RecordBuilder` + threadtime 정규식 + 골든 JSONL 3개 |
+| 3 | ✅ | `store.MemIndex[T]` + `Store`. Append 46ns, Range 24µs |
+| 4 | ✅ | `analysis.Analyzer`/`Output` + `classify.Classifier` + 10 Tier A 규칙 |
+| 5 | ✅ | `block.NewNativeCrash / NewJavaFatal / NewANR` |
+| 6 | ✅ | `source.FileSource`/`ReaderSource` + `pipeline.Pipeline` + `cmd/logsee-ana` |
+| 7 | ✅ | `logsee --export-anomalies` JSONL |
+| 8 | ✅ | `logsee mcp` JSON-RPC 2.0 stdio — 4 tools |
+| 9 (plumbing) | ✅ | Model.classifier + `FindingAt`/`FindingCount` — 렌더 미변경 |
+| 9b | ⏳ | gutter 마커, `anomaly:*` 필터 DSL, `A` 토글, 상태바 카운트 |
+| 10 | ✅ | README "AI-assisted analysis" 섹션 + `examples/mcp-claude.md` |
 
 ## 리스크
 

@@ -294,12 +294,13 @@ internal/
 - **Android 코퍼스**: `testdata/android/`에 대표 샘플 (ANR, tombstone, system_server 크래시 3종) 고정. Drain 결과도 snapshot.
 - **Headless/TUI 동치성**: 같은 입력으로 headless JSON export와 TUI session snapshot이 동일한 Findings 집합을 생산.
 
-## 오픈 이슈
+## 오픈 이슈 (상태)
 
-- **영속화 드라이버 선택**: JSONL(간단) vs bbolt(키 조회 O(log N)) — v1 JSONL로 출발, 읽기 병목 측정 후 결정.
-- **Drain3 라이선스**: 원 구현 Apache-2.0. Go 포팅 자체 작성하거나 기존 포팅(있으면) 의존성 추가 판단.
-- **adb 소스**: subprocess로 `adb logcat -v threadtime` 스폰 vs 파일 tailing. 전자는 디바이스 감지/재접속 로직 필요.
-- **MCP 서버 주소**: stdio 기반(Claude Code 표준) — v1에서 stdio, HTTP는 v2.
+- **영속화 드라이버**: v1은 순수 인메모리. `Store`는 세션 종료 시 사라짐. JSONL/bbolt 드라이버 결정은 MCP 실사용 측정 후 판단. [pending]
+- **Drain3 템플릿 마이닝**: Phase 5 이후로 유예(plan out-of-scope). [deferred]
+- **adb 소스(직접 스폰)**: 현재 `source.FileSource` / `source.ReaderSource` 만 구현. adb subprocess 어댑터는 별도 플래그/패키지로 추가 예정. [deferred]
+- **MCP 전송**: v1은 stdio + JSON-RPC 2.0 (`logsee mcp`). HTTP/SSE 전송은 v2. [stdio shipped]
+- **TUI 완전 통합**: Phase 9 plumbing(Model에 classifier 연결)까지 완료. filter DSL 확장, `A` 토글, gutter 마커 렌더는 Phase 9b로 분리. [partial]
 
 ## 관련 문서
 
