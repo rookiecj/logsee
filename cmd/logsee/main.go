@@ -51,6 +51,17 @@ func (f *trackedIntFlag) Set(v string) error {
 }
 
 func main() {
+	// Subcommand dispatch: `logsee mcp` serves the Model Context Protocol
+	// over stdio. Must be handled before flag.Parse since flag.Parse would
+	// treat "mcp" as a positional input file.
+	if len(os.Args) >= 2 && os.Args[1] == "mcp" {
+		if err := runMCP(); err != nil {
+			fmt.Fprintf(os.Stderr, "logsee: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	exportAnomalies := flag.Bool("export-anomalies", false, "skip the TUI, run the anomaly pipeline over the input, and write detected Findings/Spans as JSONL to stdout (AI-analysis mode)")
 	outPath := flag.String("out", "", "append received lines to this file when reading from stdin; if empty with stdin, creates logsee-YYYYMMDD-HHMMSS.log in cwd. Ignored when reading from an input file (no duplicate on disk)")
 	maxLines := flag.Int("max-lines", 100_000, "maximum lines retained in memory")
