@@ -16,7 +16,7 @@ func TestModel_formatLine_searchHighlightCaseSensitive(t *testing.T) {
 	r := buffer.NewRing(10)
 	m := NewModel(r, nil, false, false, "", "stdin", "", nil, nil, nil)
 	hi := lipgloss.NewStyle()
-	rec := domain.Record{Seq: 1, Text: "Hello"}
+	rec := domain.Line{Seq: 1, Text: "Hello"}
 	m.searchBuf = "ell"
 	m.searchDraft = m.searchBuf
 	out := m.formatLine(rec, hi, 50, false, false, false)

@@ -25,7 +25,7 @@ type FileIndexReadyMsg struct {
 
 // FileWindowLoadedMsg replaces the in-memory window after an async read from disk.
 type FileWindowLoadedMsg struct {
-	Records   []domain.Record
+	Records   []domain.Line
 	FirstLine int64
 	Err       error
 }
@@ -41,7 +41,7 @@ type SearchScanResultMsg struct {
 }
 
 type FilterScanResultMsg struct {
-	Records    []domain.Record
+	Records    []domain.Line
 	FirstLine  int64
 	Direction  int
 	ReachedEnd bool
@@ -56,9 +56,9 @@ func (m *Model) applyFilePartialBootstrap(path string, lines []string) {
 	m.scrollTop = 0
 	m.scrollSegTop = 0
 	m.colRuneOff = 0
-	recs := make([]domain.Record, len(lines))
+	recs := make([]domain.Line, len(lines))
 	for i, t := range lines {
-		recs[i] = domain.Record{Seq: int64(i + 1), Text: t}
+		recs[i] = domain.Line{Seq: int64(i + 1), Text: t}
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 1
@@ -93,7 +93,7 @@ func (m *Model) applyFileIndexReady(offsets []int64) {
 // Phase 4: pendingFocusSeq / pendingFocusPreferBottom are gone. The cmd functions now set
 // cursorSeq / viewTopSeq directly, and this function infers the "prefer bottom row" intent from
 // viewTopSeq < cursorSeq (the signature of a bottom-pin load like End / PageDown / AroundBottom).
-func (m *Model) applyFileWindowLoaded(recs []domain.Record, firstLine int64) {
+func (m *Model) applyFileWindowLoaded(recs []domain.Line, firstLine int64) {
 	m.fileWinFirst = firstLine
 	m.buf.ReplaceRecords(recs)
 	fidx := m.filteredIndices()

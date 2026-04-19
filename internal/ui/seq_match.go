@@ -11,7 +11,7 @@ import (
 // Phase 3 boundary: any scan — ring-local or disk-driven — should take a SeqPredicate so the
 // matching rule stays orthogonal to the scan mechanism. In-memory scans (via fidx) and pull-driven
 // disk scans (WindowProvider.Fetch) can share the same predicate.
-type SeqPredicate func(rec domain.Record) bool
+type SeqPredicate func(rec domain.Line) bool
 
 // filterPredicate closes over the currently applied filter program so a single predicate can be
 // reused across ring scans and disk scans without reading Model state from a goroutine.
@@ -19,7 +19,7 @@ func (m *Model) filterPredicate() SeqPredicate {
 	prog := m.prog
 	ignoreCase := m.ignoreCase
 	logFmt := m.effectiveLogFormat()
-	return func(rec domain.Record) bool {
+	return func(rec domain.Line) bool {
 		return filter.Match(rec.Text, prog, ignoreCase, logFmt)
 	}
 }
@@ -29,7 +29,7 @@ func (m *Model) filterPredicate() SeqPredicate {
 func (m *Model) searchPredicate() SeqPredicate {
 	query := m.searchBuf
 	names := m.highlightNames
-	return func(rec domain.Record) bool {
+	return func(rec domain.Line) bool {
 		return SearchMatchesLineWithNames(rec.Text, query, false, names)
 	}
 }
@@ -44,7 +44,7 @@ func (m *Model) nextMatchIdxInFidx(fidx []int, fromSeq int64, dir int, pred SeqP
 	if m.buf == nil || len(fidx) == 0 {
 		return -1
 	}
-	accept := func(rec domain.Record) bool {
+	accept := func(rec domain.Line) bool {
 		return pred == nil || pred(rec)
 	}
 	bufLen := m.buf.Len()

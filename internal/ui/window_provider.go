@@ -18,7 +18,7 @@ import (
 type WindowProvider interface {
 	// Fetch returns records for seqs firstSeq..lastSeq inclusive (1-based). Out-of-range
 	// seqs are clamped; firstSeq > total returns an empty slice.
-	Fetch(firstSeq, lastSeq int64) ([]domain.Record, error)
+	Fetch(firstSeq, lastSeq int64) ([]domain.Line, error)
 	// TotalLines is the number of logical lines known to the provider (0 when not yet indexed).
 	TotalLines() int64
 	// FileSize is the byte size of the underlying source (0 when unknown or not file-backed).
@@ -43,7 +43,7 @@ func NewFileSliceProvider(path string, offsets []int64, sizeBytes int64) *FileSl
 	return &FileSliceProvider{path: path, offsets: cp, sizeBytes: sizeBytes}
 }
 
-func (p *FileSliceProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, error) {
+func (p *FileSliceProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Line, error) {
 	if p == nil {
 		return nil, nil
 	}
@@ -128,9 +128,9 @@ func (p *RingStreamProvider) SetDiskFallback(path string, idx *fileindex.Increme
 
 // Push pushes text into the ring and bumps the cumulative receive count. It holds the
 // provider mutex so Fetch goroutines see a consistent ring.
-func (p *RingStreamProvider) Push(text string) domain.Record {
+func (p *RingStreamProvider) Push(text string) domain.Line {
 	if p == nil || p.buf == nil {
-		return domain.Record{}
+		return domain.Line{}
 	}
 	p.mu.Lock()
 	rec := p.buf.Push(text)
@@ -214,12 +214,12 @@ func (p *RingStreamProvider) Horizon() int64 {
 // come from the ring; seqs outside the ring (evicted, or arrived while scrollback froze
 // the ring) resolve through the --out file when disk fallback is enabled. Seqs below the
 // rotation horizon are silently absent.
-func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, error) {
+func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Line, error) {
 	if p == nil || p.buf == nil || lastSeq < firstSeq || firstSeq < 1 {
 		return nil, nil
 	}
 	p.mu.Lock()
-	var ringRecs []domain.Record
+	var ringRecs []domain.Line
 	var ringFirst, ringLast int64
 	if n := p.buf.Len(); n > 0 {
 		ringFirst = p.buf.At(0).Seq
@@ -241,7 +241,7 @@ func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, er
 	horizon := p.horizon
 	p.mu.Unlock()
 
-	readDisk := func(dFirst, dLast int64) ([]domain.Record, error) {
+	readDisk := func(dFirst, dLast int64) ([]domain.Line, error) {
 		if outPath == "" || idx == nil {
 			return nil, nil
 		}
@@ -267,7 +267,7 @@ func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, er
 	}
 
 	// Disk portion before the ring: seqs in [firstSeq, min(ringFirst-1, lastSeq)].
-	var diskBefore []domain.Record
+	var diskBefore []domain.Line
 	if ringFirst == 0 || firstSeq < ringFirst {
 		dLast := lastSeq
 		if ringFirst > 0 && dLast >= ringFirst {
@@ -281,7 +281,7 @@ func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, er
 	}
 
 	// Disk portion after the ring: seqs > ringLast (scrollback-mode arrivals not yet in ring).
-	var diskAfter []domain.Record
+	var diskAfter []domain.Line
 	if ringLast > 0 && lastSeq > ringLast {
 		recs, err := readDisk(ringLast+1, lastSeq)
 		if err != nil {
@@ -290,7 +290,7 @@ func (p *RingStreamProvider) Fetch(firstSeq, lastSeq int64) ([]domain.Record, er
 		diskAfter = recs
 	}
 
-	out := make([]domain.Record, 0, len(diskBefore)+len(ringRecs)+len(diskAfter))
+	out := make([]domain.Line, 0, len(diskBefore)+len(ringRecs)+len(diskAfter))
 	out = append(out, diskBefore...)
 	out = append(out, ringRecs...)
 	out = append(out, diskAfter...)

@@ -172,7 +172,7 @@ func TestModel_ctrlN_filePartial_usesInWindowMatchBeforeLazyLoad(t *testing.T) {
 	m.width, m.height = 80, 24
 	m.filePartial = true
 	m.fileOffsets = []int64{0, 10, 20, 30}
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "x one"},
 		{Seq: 2, Text: "middle"},
 		{Seq: 3, Text: "x two"},

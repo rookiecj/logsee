@@ -10,7 +10,7 @@ import (
 // ring with a historical window (Home/PageUp/PageDown/NavUp/NavDown) or with the
 // live tail (End exit).
 type stdinScrollbackMsg struct {
-	Records      []domain.Record
+	Records      []domain.Line
 	First        int64 // first seq in the window
 	TargetSeq    int64 // seq the cursor should land on (0 = default, top of window)
 	PreferBottom bool  // place cursor at the bottom row of the viewport after load

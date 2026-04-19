@@ -163,7 +163,7 @@ func (m *Model) searchHighlightVis(plain string, hi lipgloss.Style, isCursor, is
 	return HighlightReverseFromNeedles(plain, needles, false, baseSeg, matchSeg), baseSeg
 }
 
-func (m *Model) formatWrapSeg(rec domain.Record, seg wrapSeg, hi lipgloss.Style, w int, isCursor, isSelected, pickOnly bool) string {
+func (m *Model) formatWrapSeg(rec domain.Line, seg wrapSeg, hi lipgloss.Style, w int, isCursor, isSelected, pickOnly bool) string {
 	rs := []rune(rec.Text)
 	r0, r1 := seg.R0, seg.R1
 	if r0 < 0 {
@@ -248,7 +248,7 @@ func (m *Model) formatWrapSeg(rec domain.Record, seg wrapSeg, hi lipgloss.Style,
 	return st.Render(line)
 }
 
-func (m *Model) formatLine(rec domain.Record, hi lipgloss.Style, w int, isCursor, isSelected, pickOnly bool) string {
+func (m *Model) formatLine(rec domain.Line, hi lipgloss.Style, w int, isCursor, isSelected, pickOnly bool) string {
 	rs := []rune(rec.Text)
 	col := m.colRuneOff
 	if col > len(rs) {

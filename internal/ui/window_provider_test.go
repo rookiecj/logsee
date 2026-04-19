@@ -11,7 +11,7 @@ import (
 // fakeWindowProvider implements WindowProvider in-memory so command-level tests can exercise the
 // nav/filter flow without touching disk (Phase 2: the interface is the seam).
 type fakeWindowProvider struct {
-	records    []domain.Record // seq i stored at records[i-1]
+	records    []domain.Line // seq i stored at records[i-1]
 	sizeBytes  int64
 	fetchCalls []fetchCall
 }
@@ -21,14 +21,14 @@ type fetchCall struct {
 }
 
 func newFakeWindowProvider(seqs []int64) *fakeWindowProvider {
-	recs := make([]domain.Record, len(seqs))
+	recs := make([]domain.Line, len(seqs))
 	for i, s := range seqs {
-		recs[i] = domain.Record{Seq: s, Text: "line-fake"}
+		recs[i] = domain.Line{Seq: s, Text: "line-fake"}
 	}
 	return &fakeWindowProvider{records: recs, sizeBytes: int64(len(recs) * 32)}
 }
 
-func (f *fakeWindowProvider) Fetch(first, last int64) ([]domain.Record, error) {
+func (f *fakeWindowProvider) Fetch(first, last int64) ([]domain.Line, error) {
 	f.fetchCalls = append(f.fetchCalls, fetchCall{first: first, last: last})
 	total := int64(len(f.records))
 	if first < 1 || first > total {
@@ -37,7 +37,7 @@ func (f *fakeWindowProvider) Fetch(first, last int64) ([]domain.Record, error) {
 	if last > total {
 		last = total
 	}
-	return append([]domain.Record(nil), f.records[first-1:last]...), nil
+	return append([]domain.Line(nil), f.records[first-1:last]...), nil
 }
 
 func (f *fakeWindowProvider) TotalLines() int64 {
@@ -156,7 +156,7 @@ func TestWindowProvider_cmdFindFilterMatchForward_usesProvider(t *testing.T) {
 	m.filePartial = true
 	m.filePath = "/tmp/x.log"
 	// Prime a small "loaded window" in the ring.
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 100, Text: "match"},
 		{Seq: 101, Text: "match"},
 	})
@@ -174,7 +174,7 @@ func TestWindowProvider_cmdFindFilterMatchForward_usesProvider(t *testing.T) {
 	fake := newFakeWindowProvider(make([]int64, 1000))
 	// Populate fake with seqs 1..1000.
 	for i := range fake.records {
-		fake.records[i] = domain.Record{Seq: int64(i + 1), Text: "fake-match"}
+		fake.records[i] = domain.Line{Seq: int64(i + 1), Text: "fake-match"}
 	}
 	m.windowProvider = fake
 

@@ -184,7 +184,7 @@ func TestModel_filterApply_whenNoMatchInWindow_requestsForwardScanInFilePartial(
 	m.filePartial = true
 	m.fileOffsets = []int64{0, 10, 20, 30}
 	m.fileWinFirst = 1
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "a"},
 		{Seq: 2, Text: "b"},
 	})
@@ -212,7 +212,7 @@ func TestModel_filterApply_whenMatchesBelowViewport_requestsForwardScanInFilePar
 	m.filePartial = true
 	m.fileOffsets = []int64{0, 10, 20, 30, 40}
 	m.fileWinFirst = 1
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "match a"},
 		{Seq: 2, Text: "x"},
 		{Seq: 3, Text: "match b"},
@@ -245,14 +245,14 @@ func TestModel_filterTopup_appendsLoadedWindowUntilViewportFilled(t *testing.T) 
 		t.Fatalf("parse filter: %v", err)
 	}
 	m.prog = p
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "m1"},
 		{Seq: 2, Text: "x"},
 	})
 
 	// When: next file window arrives
 	next, _ := m.Update(FilterScanResultMsg{
-		Records: []domain.Record{
+		Records: []domain.Line{
 			{Seq: 3, Text: "m2"},
 			{Seq: 4, Text: "m3"},
 			{Seq: 5, Text: "m4"},
@@ -286,14 +286,14 @@ func TestModel_filterTopup_whenBackwardDirection_prependsLoadedWindow(t *testing
 		t.Fatalf("parse filter: %v", err)
 	}
 	m.prog = p
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 10, Text: "m10"},
 		{Seq: 11, Text: "m11"},
 	})
 
 	// When: previous file window arrives as filter scan result
 	next, _ := m.Update(FilterScanResultMsg{
-		Records: []domain.Record{
+		Records: []domain.Line{
 			{Seq: 6, Text: "m6"},
 			{Seq: 7, Text: "m7"},
 			{Seq: 8, Text: "x"},
@@ -331,7 +331,7 @@ func TestModel_fileIndexReady_resumesFilterTopupWhenIndexArrivesLate(t *testing.
 		t.Fatalf("parse filter: %v", err)
 	}
 	m.prog = p
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "match a"},
 		{Seq: 2, Text: "x"},
 	})
@@ -362,7 +362,7 @@ func TestModel_windowResize_restartsFilterTopupWhenViewportGetsLarger(t *testing
 	}
 	m.prog = p
 	m.appliedFilter = "match"
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "match a"},
 		{Seq: 2, Text: "x"},
 	})
@@ -400,7 +400,7 @@ func TestModel_fileWindowLoaded_restartsTopupWhenFilteredRowsAreBelowViewport(t 
 
 	// When: a new window is loaded (e.g., after page down) with too few matches
 	next, cmd := m.Update(FileWindowLoadedMsg{
-		Records: []domain.Record{
+		Records: []domain.Line{
 			{Seq: 21, Text: "match a"},
 			{Seq: 22, Text: "x"},
 			{Seq: 23, Text: "match b"},
@@ -463,7 +463,7 @@ func TestModel_pickFilterTopupDirWhenUndersized_atEOF_returnsBackward(t *testing
 	m.filePartial = true
 	m.fileTotalLines = 100
 	m.fileWinFirst = 70
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 99, Text: "x"},
 		{Seq: 100, Text: "match"},
 	})
@@ -482,7 +482,7 @@ func TestModel_pickFilterTopupDirWhenUndersized_notAtEOF_returnsForward(t *testi
 	m.filePartial = true
 	m.fileTotalLines = 100
 	m.fileWinFirst = 1
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "match"},
 		{Seq: 2, Text: "x"},
 	})
@@ -512,7 +512,7 @@ func TestModel_FilterScanResultMsg_forwardEOFWithoutRecords_schedulesBackwardTop
 	m.appliedFilter = "m"
 	m.filterTopupActive = true
 	m.filterTopupDir = +1
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 99, Text: "x"},
 		{Seq: 100, Text: "match"},
 	})

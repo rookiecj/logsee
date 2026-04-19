@@ -23,10 +23,10 @@ func newFilePartialModelForSeq(t *testing.T) *Model {
 	return m
 }
 
-func recsFromSeqs(seqs ...int64) []domain.Record {
-	out := make([]domain.Record, len(seqs))
+func recsFromSeqs(seqs ...int64) []domain.Line {
+	out := make([]domain.Line, len(seqs))
 	for i, s := range seqs {
-		out[i] = domain.Record{Seq: s, Text: "line"}
+		out[i] = domain.Line{Seq: s, Text: "line"}
 	}
 	return out
 }
@@ -223,13 +223,13 @@ func TestSeqAnchor_filterNavDownAdvancesToNextMatchOnDisk(t *testing.T) {
 
 	// Loaded window: seqs 100..150. Matches at 108/115/122/128 (mimics D-level density).
 	matchSeqs := map[int64]bool{108: true, 115: true, 122: true, 128: true}
-	recs := make([]domain.Record, 0, 51)
+	recs := make([]domain.Line, 0, 51)
 	for s := int64(100); s <= 150; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if matchSeqs[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		recs = append(recs, domain.Record{Seq: s, Text: text})
+		recs = append(recs, domain.Line{Seq: s, Text: text})
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 100
@@ -257,14 +257,14 @@ func TestSeqAnchor_filterNavDownAdvancesToNextMatchOnDisk(t *testing.T) {
 	}
 
 	// Simulate the scan result: raw records for seqs 151..190 with matches at 155 and 162.
-	newRecs := make([]domain.Record, 0, 40)
+	newRecs := make([]domain.Line, 0, 40)
 	newMatches := map[int64]bool{155: true, 162: true}
 	for s := int64(151); s <= 190; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if newMatches[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		newRecs = append(newRecs, domain.Record{Seq: s, Text: text})
+		newRecs = append(newRecs, domain.Line{Seq: s, Text: text})
 	}
 	next, _ := m.Update(FilterScanResultMsg{
 		Records:    newRecs,
@@ -306,13 +306,13 @@ func TestSeqAnchor_filterNavUpAdvancesToPrevMatchOnDisk(t *testing.T) {
 
 	// Loaded window: seqs 200..250. Matches at 208/215/222/228.
 	matchSeqs := map[int64]bool{208: true, 215: true, 222: true, 228: true}
-	recs := make([]domain.Record, 0, 51)
+	recs := make([]domain.Line, 0, 51)
 	for s := int64(200); s <= 250; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if matchSeqs[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		recs = append(recs, domain.Record{Seq: s, Text: text})
+		recs = append(recs, domain.Line{Seq: s, Text: text})
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 200
@@ -335,14 +335,14 @@ func TestSeqAnchor_filterNavUpAdvancesToPrevMatchOnDisk(t *testing.T) {
 	}
 
 	// Simulate backward scan: seqs 160..199 with matches at 185 and 195.
-	newRecs := make([]domain.Record, 0, 40)
+	newRecs := make([]domain.Line, 0, 40)
 	newMatches := map[int64]bool{185: true, 195: true}
 	for s := int64(160); s <= 199; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if newMatches[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		newRecs = append(newRecs, domain.Record{Seq: s, Text: text})
+		newRecs = append(newRecs, domain.Line{Seq: s, Text: text})
 	}
 	next, _ := m.Update(FilterScanResultMsg{
 		Records:    newRecs,
@@ -377,13 +377,13 @@ func TestSeqAnchor_filterPageUpAdvancesByVhMatches(t *testing.T) {
 
 	// Loaded window: seqs 300..350, matches at 308/315/322/328 (4 visible matches).
 	matchSeqs := map[int64]bool{308: true, 315: true, 322: true, 328: true}
-	recs := make([]domain.Record, 0, 51)
+	recs := make([]domain.Line, 0, 51)
 	for s := int64(300); s <= 350; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if matchSeqs[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		recs = append(recs, domain.Record{Seq: s, Text: text})
+		recs = append(recs, domain.Line{Seq: s, Text: text})
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 300
@@ -406,7 +406,7 @@ func TestSeqAnchor_filterPageUpAdvancesByVhMatches(t *testing.T) {
 	}
 
 	// Simulate backward scan: raw records [150..299] with matches every 20 seqs.
-	newRecs := make([]domain.Record, 0, 150)
+	newRecs := make([]domain.Line, 0, 150)
 	prevMatches := make(map[int64]bool)
 	for s := int64(160); s <= 298; s += 20 {
 		prevMatches[s] = true
@@ -416,7 +416,7 @@ func TestSeqAnchor_filterPageUpAdvancesByVhMatches(t *testing.T) {
 		if prevMatches[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		newRecs = append(newRecs, domain.Record{Seq: s, Text: text})
+		newRecs = append(newRecs, domain.Line{Seq: s, Text: text})
 	}
 	next, _ := m.Update(FilterScanResultMsg{
 		Records:    newRecs,
@@ -477,13 +477,13 @@ func TestSeqAnchor_filterPageDownAdvancesByVhMatches(t *testing.T) {
 	m.appliedFilter = "match"
 
 	matchSeqs := map[int64]bool{408: true, 415: true, 422: true, 428: true}
-	recs := make([]domain.Record, 0, 51)
+	recs := make([]domain.Line, 0, 51)
 	for s := int64(400); s <= 450; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if matchSeqs[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		recs = append(recs, domain.Record{Seq: s, Text: text})
+		recs = append(recs, domain.Line{Seq: s, Text: text})
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 400
@@ -507,7 +507,7 @@ func TestSeqAnchor_filterPageDownAdvancesByVhMatches(t *testing.T) {
 	}
 
 	// Forward scan: [451..600] with sparse matches every 25 seqs.
-	newRecs := make([]domain.Record, 0, 150)
+	newRecs := make([]domain.Line, 0, 150)
 	nextMatches := make(map[int64]bool)
 	for s := int64(475); s <= 600; s += 25 {
 		nextMatches[s] = true
@@ -517,7 +517,7 @@ func TestSeqAnchor_filterPageDownAdvancesByVhMatches(t *testing.T) {
 		if nextMatches[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		newRecs = append(newRecs, domain.Record{Seq: s, Text: text})
+		newRecs = append(newRecs, domain.Line{Seq: s, Text: text})
 	}
 	next, _ := m.Update(FilterScanResultMsg{
 		Records:    newRecs,
@@ -553,13 +553,13 @@ func TestSeqAnchor_filterNavAdvancePartialThenChain(t *testing.T) {
 
 	// Loaded window with cursor on the last match at seq=510.
 	matchSeqs := map[int64]bool{502: true, 510: true}
-	recs := make([]domain.Record, 0, 51)
+	recs := make([]domain.Line, 0, 51)
 	for s := int64(500); s <= 550; s++ {
 		text := "other " + strconv.FormatInt(s, 10)
 		if matchSeqs[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		recs = append(recs, domain.Record{Seq: s, Text: text})
+		recs = append(recs, domain.Line{Seq: s, Text: text})
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 500
@@ -578,13 +578,13 @@ func TestSeqAnchor_filterNavAdvancePartialThenChain(t *testing.T) {
 
 	// First scan chunk delivers 2 new matches (insufficient).
 	chunk1Matches := map[int64]bool{560: true, 580: true}
-	chunk1 := make([]domain.Record, 0, 100)
+	chunk1 := make([]domain.Line, 0, 100)
 	for s := int64(551); s <= 650; s++ {
 		text := "other"
 		if chunk1Matches[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		chunk1 = append(chunk1, domain.Record{Seq: s, Text: text})
+		chunk1 = append(chunk1, domain.Line{Seq: s, Text: text})
 	}
 	next1, cmd1 := m.Update(FilterScanResultMsg{
 		Records:    chunk1,
@@ -608,13 +608,13 @@ func TestSeqAnchor_filterNavAdvancePartialThenChain(t *testing.T) {
 
 	// Second scan chunk delivers 4 more matches → total 6 > 5, should stop at 5th.
 	chunk2Matches := map[int64]bool{670: true, 690: true, 710: true, 730: true}
-	chunk2 := make([]domain.Record, 0, 100)
+	chunk2 := make([]domain.Line, 0, 100)
 	for s := int64(651); s <= 750; s++ {
 		text := "other"
 		if chunk2Matches[s] {
 			text = "match " + strconv.FormatInt(s, 10)
 		}
-		chunk2 = append(chunk2, domain.Record{Seq: s, Text: text})
+		chunk2 = append(chunk2, domain.Line{Seq: s, Text: text})
 	}
 	// Focus for chunk2 is new cursor seq (580).
 	next2, _ := m2.Update(FilterScanResultMsg{

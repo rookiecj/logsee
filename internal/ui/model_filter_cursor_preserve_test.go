@@ -96,7 +96,7 @@ func TestModel_FilterScanResultMsg_backwardPrepend_preservesCursorPhysicalSeq(t 
 	m.appliedFilter = "x"
 	m.filterTopupActive = true
 	m.filterTopupDir = -1
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 99, Text: "x"},
 		{Seq: 100, Text: "x tail"},
 	})
@@ -105,7 +105,7 @@ func TestModel_FilterScanResultMsg_backwardPrepend_preservesCursorPhysicalSeq(t 
 
 	// When: backward chunk prepended
 	next, _ := m.Update(FilterScanResultMsg{
-		Records: []domain.Record{
+		Records: []domain.Line{
 			{Seq: 95, Text: "x"},
 			{Seq: 96, Text: "x"},
 			{Seq: 97, Text: "x"},
@@ -145,7 +145,7 @@ func TestModel_FilterScanResultMsg_forwardAppend_followsTailWhenCursorWasOldTail
 	m.appliedFilter = "x"
 	m.filterTopupActive = true
 	m.filterTopupDir = +1
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 99, Text: "x"},
 		{Seq: 100, Text: "x tail"},
 	})
@@ -153,7 +153,7 @@ func TestModel_FilterScanResultMsg_forwardAppend_followsTailWhenCursorWasOldTail
 	m.fileWinFirst = 99
 
 	next, _ := m.Update(FilterScanResultMsg{
-		Records: []domain.Record{
+		Records: []domain.Line{
 			{Seq: 101, Text: "x"},
 			{Seq: 102, Text: "x"},
 		},

@@ -18,7 +18,7 @@ func newSeqMatchModel(t *testing.T) *Model {
 
 func TestNextMatchIdxInFidx_forwardFindsFirstStrictlyGreater(t *testing.T) {
 	m := newSeqMatchModel(t)
-	recs := []domain.Record{
+	recs := []domain.Line{
 		{Seq: 10, Text: "a"},
 		{Seq: 20, Text: "b"},
 		{Seq: 30, Text: "c"},
@@ -45,7 +45,7 @@ func TestNextMatchIdxInFidx_forwardFindsFirstStrictlyGreater(t *testing.T) {
 
 func TestNextMatchIdxInFidx_backwardFindsLastStrictlyLess(t *testing.T) {
 	m := newSeqMatchModel(t)
-	recs := []domain.Record{
+	recs := []domain.Line{
 		{Seq: 10, Text: "a"},
 		{Seq: 20, Text: "b"},
 		{Seq: 30, Text: "c"},
@@ -65,7 +65,7 @@ func TestNextMatchIdxInFidx_backwardFindsLastStrictlyLess(t *testing.T) {
 
 func TestNextMatchIdxInFidx_predicateFiltersRecords(t *testing.T) {
 	m := newSeqMatchModel(t)
-	recs := []domain.Record{
+	recs := []domain.Line{
 		{Seq: 1, Text: "alpha"},
 		{Seq: 2, Text: "beta"},
 		{Seq: 3, Text: "alpha beta"},
@@ -76,7 +76,7 @@ func TestNextMatchIdxInFidx_predicateFiltersRecords(t *testing.T) {
 	fidx := m.filteredIndices()
 
 	// Predicate: text contains "beta".
-	betaPred := func(rec domain.Record) bool {
+	betaPred := func(rec domain.Line) bool {
 		return containsBeta(rec.Text)
 	}
 	// Forward from seq=2: next beta is seq=3 (idx 2).
@@ -108,7 +108,7 @@ func TestNextMatchIdxInFidx_respectsFilterProjectionInFidx(t *testing.T) {
 	}
 	m.prog = p
 	m.appliedFilter = "keep"
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "drop"},
 		{Seq: 2, Text: "keep"},
 		{Seq: 3, Text: "drop"},
@@ -144,7 +144,7 @@ func TestSearchPredicate_matchesCommittedQuery(t *testing.T) {
 		{"no match here", false},
 	}
 	for _, c := range cases {
-		got := pred(domain.Record{Seq: 1, Text: c.text})
+		got := pred(domain.Line{Seq: 1, Text: c.text})
 		if got != c.want {
 			t.Errorf("searchPredicate(%q) = %v, want %v", c.text, got, c.want)
 		}
@@ -160,10 +160,10 @@ func TestFilterPredicate_matchesCurrentProgram(t *testing.T) {
 	m.prog = p
 	m.appliedFilter = "warn"
 	pred := m.filterPredicate()
-	if !pred(domain.Record{Seq: 1, Text: "warning: disk full"}) {
+	if !pred(domain.Line{Seq: 1, Text: "warning: disk full"}) {
 		t.Fatal("warn predicate: want true for 'warning: disk full'")
 	}
-	if pred(domain.Record{Seq: 1, Text: "info: ok"}) {
+	if pred(domain.Line{Seq: 1, Text: "info: ok"}) {
 		t.Fatal("warn predicate: want false for 'info: ok'")
 	}
 }

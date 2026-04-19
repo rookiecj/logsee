@@ -18,7 +18,7 @@ func TestCmdExpandFileWindowIfUndersized_returnsReloadWhenAtFirstLine(t *testing
 	m.fileTotalLines = 100
 	m.height = 25
 	m.width = 80
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 1, Text: "a"},
 		{Seq: 2, Text: "b"},
 	})
@@ -44,7 +44,7 @@ func TestCmdExpandFileWindowIfUndersized_returnsReloadWhenBufferSmallerThanTarge
 	m.fileTotalLines = 100
 	m.height = 25 // viewportH = 22 → want min(44,100)=44 lines
 	m.width = 80
-	m.buf.ReplaceRecords([]domain.Record{
+	m.buf.ReplaceRecords([]domain.Line{
 		{Seq: 99, Text: "a"},
 		{Seq: 100, Text: "b"},
 	})
@@ -68,9 +68,9 @@ func TestCmdExpandFileWindowIfUndersized_noopWhenBufferAlreadyFull(t *testing.T)
 	m.fileOffsets = make([]int64, 100)
 	m.fileTotalLines = 100
 	m.height = 25
-	recs := make([]domain.Record, 44)
+	recs := make([]domain.Line, 44)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(i + 1), Text: "x"}
+		recs[i] = domain.Line{Seq: int64(i + 1), Text: "x"}
 	}
 	m.buf.ReplaceRecords(recs)
 	m.fileWinFirst = 1
@@ -92,9 +92,9 @@ func TestCmdExpandFileWindowIfUndersized_noopWhenEntireFileIsLoaded(t *testing.T
 	m.fileOffsets = make([]int64, 5)
 	m.fileTotalLines = 5
 	m.height = 25
-	recs := make([]domain.Record, 5)
+	recs := make([]domain.Line, 5)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(i + 1), Text: "x"}
+		recs[i] = domain.Line{Seq: int64(i + 1), Text: "x"}
 	}
 	m.buf.ReplaceRecords(recs)
 	m.cursorIdx = 0

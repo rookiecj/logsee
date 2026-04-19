@@ -48,7 +48,7 @@ func BuildLineStartOffsets(path string) ([]int64, error) {
 
 // ReadWindowRecords reads logical lines firstLine1..lastLine1 inclusive (1-based line numbers).
 // offsets must be from [loginput.LineStartOffsets]; len(offsets) is the total line count.
-func ReadWindowRecords(path string, offsets []int64, firstLine1, lastLine1 int) ([]domain.Record, error) {
+func ReadWindowRecords(path string, offsets []int64, firstLine1, lastLine1 int) ([]domain.Line, error) {
 	if len(offsets) == 0 || firstLine1 < 1 || lastLine1 < firstLine1 {
 		return nil, nil
 	}
@@ -69,10 +69,10 @@ func ReadWindowRecords(path string, offsets []int64, firstLine1, lastLine1 int) 
 		return nil, err
 	}
 	nWant := lastLine1 - firstLine1 + 1
-	var recs []domain.Record
+	var recs []domain.Line
 	seq := int64(firstLine1)
 	err = loginput.ScanLines(f, func(s string) error {
-		recs = append(recs, domain.Record{Seq: seq, Text: strings.ToValidUTF8(s, "\uFFFD")})
+		recs = append(recs, domain.Line{Seq: seq, Text: strings.ToValidUTF8(s, "\uFFFD")})
 		seq++
 		if len(recs) >= nWant {
 			return io.EOF

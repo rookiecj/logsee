@@ -26,9 +26,9 @@ func TestApplyFileWindowLoaded_seqAnchorPinsCursorTopRowAfterNavUp(t *testing.T)
 	m.cursorSeq = 5
 	m.viewTopSeq = 5
 	n := vh + 8
-	recs := make([]domain.Record, n)
+	recs := make([]domain.Line, n)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(i + 1), Text: "line"}
+		recs[i] = domain.Line{Seq: int64(i + 1), Text: "line"}
 	}
 	m.applyFileWindowLoaded(recs, 1)
 
@@ -65,9 +65,9 @@ func TestFilterScanResultMsg_backwardPrepend_keepsCursorOnFocusSeqTopRow(t *test
 
 	prepN := vh + 3
 	oldN := vh + 5
-	recs := make([]domain.Record, oldN)
+	recs := make([]domain.Line, oldN)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(prepN + i + 1), Text: "x"}
+		recs[i] = domain.Line{Seq: int64(prepN + i + 1), Text: "x"}
 	}
 	m.buf.ReplaceRecords(recs)
 	m.cursorIdx = 0
@@ -75,9 +75,9 @@ func TestFilterScanResultMsg_backwardPrepend_keepsCursorOnFocusSeqTopRow(t *test
 	m.fileWinFirst = int64(prepN + 1)
 	focusSeq := m.buf.At(m.filteredIndices()[m.cursorIdx]).Seq
 
-	pre := make([]domain.Record, prepN)
+	pre := make([]domain.Line, prepN)
 	for i := range pre {
-		pre[i] = domain.Record{Seq: int64(i + 1), Text: "x"}
+		pre[i] = domain.Line{Seq: int64(i + 1), Text: "x"}
 	}
 	next, _ := m.Update(FilterScanResultMsg{
 		Records:    pre,
@@ -107,9 +107,9 @@ func TestMaybeFileLoadAfterNavUp_unfilteredUsesAroundGMinus1(t *testing.T) {
 	m.fileOffsets = make([]int64, 6000)
 	m.fileTotalLines = 6000
 	m.fileWinFirst = 2000
-	recs := make([]domain.Record, 50)
+	recs := make([]domain.Line, 50)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(2000 + i), Text: "line"}
+		recs[i] = domain.Line{Seq: int64(2000 + i), Text: "line"}
 	}
 	m.buf.ReplaceRecords(recs)
 	fidx := m.filteredIndices()
@@ -133,9 +133,9 @@ func TestMaybeFileLoadAfterNavUp_filteredDelegatesToFilterScan(t *testing.T) {
 	m.fileOffsets = make([]int64, 6000)
 	m.fileTotalLines = 6000
 	m.fileWinFirst = 2000
-	recs := make([]domain.Record, 50)
+	recs := make([]domain.Line, 50)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(2000 + i), Text: "x"}
+		recs[i] = domain.Line{Seq: int64(2000 + i), Text: "x"}
 	}
 	p, err := filter.Parse("x")
 	if err != nil {
@@ -174,9 +174,9 @@ func TestMaybeFileLoadAfterNavDown_filteredDelegatesToFilterScan(t *testing.T) {
 	m.fileOffsets = make([]int64, 6000)
 	m.fileTotalLines = 6000
 	m.fileWinFirst = 2000
-	recs := make([]domain.Record, 50)
+	recs := make([]domain.Line, 50)
 	for i := range recs {
-		recs[i] = domain.Record{Seq: int64(2000 + i), Text: "x"}
+		recs[i] = domain.Line{Seq: int64(2000 + i), Text: "x"}
 	}
 	p, err := filter.Parse("x")
 	if err != nil {
@@ -205,4 +205,4 @@ func TestMaybeFileLoadAfterNavDown_filteredDelegatesToFilterScan(t *testing.T) {
 	_ = cmd
 }
 
-var _ = domain.Record{} // keep import anchored after Phase 4 deletions
+var _ = domain.Line{} // keep import anchored after Phase 4 deletions

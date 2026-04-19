@@ -235,7 +235,7 @@ func TestApplyFileWindowLoaded_bottomPinFallback_keepsCursorOffTop(t *testing.T)
 		top = 1
 	}
 	m.viewTopSeq = top
-	recs := []domain.Record{
+	recs := []domain.Line{
 		{Seq: 101, Text: "line-101"},
 		{Seq: 102, Text: "line-102"},
 		{Seq: 103, Text: "line-103"},

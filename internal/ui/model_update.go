@@ -201,7 +201,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					oldLastMatchSeq = m.buf.At(oldFidx[len(oldFidx)-1]).Seq
 				}
 			}
-			existing := make([]domain.Record, 0, m.buf.Len()+len(msg.Records))
+			existing := make([]domain.Line, 0, m.buf.Len()+len(msg.Records))
 			if msg.Direction < 0 {
 				existing = append(existing, msg.Records...)
 				for i := 0; i < m.buf.Len(); i++ {
