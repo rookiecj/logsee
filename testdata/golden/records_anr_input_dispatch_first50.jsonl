@@ -1,0 +1,50 @@
+{"seq":1,"time":"2024-04-19T14:23:10.004Z","level":"I","pid":1245,"tid":1245,"tag":"SystemServer","msg":"Entered the Android system server!","fmt":"android","schema_version":1}
+{"seq":2,"time":"2024-04-19T14:23:10.412Z","level":"I","pid":1245,"tid":1245,"tag":"ActivityManager","msg":"System now ready","fmt":"android","schema_version":1}
+{"seq":3,"time":"2024-04-19T14:23:12.001Z","level":"I","pid":1245,"tid":1245,"tag":"BootReceiver","msg":"Boot completed","fmt":"android","schema_version":1}
+{"seq":4,"time":"2024-04-19T14:23:30.445Z","level":"I","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"START u0 {act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.example.app/.MainActivity}","fmt":"android","schema_version":1}
+{"seq":5,"time":"2024-04-19T14:23:40.012Z","level":"I","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Start proc 12345:com.example.app/u0a123 for activity {com.example.app/.MainActivity}","fmt":"android","schema_version":1}
+{"seq":6,"time":"2024-04-19T14:23:40.089Z","level":"I","pid":12345,"tid":12345,"tag":"Zygote","msg":"Process forked for com.example.app","fmt":"android","schema_version":1}
+{"seq":7,"time":"2024-04-19T14:23:40.145Z","level":"D","pid":12345,"tid":12345,"tag":"ActivityThread","msg":"handleBindApplication: mBoundApplication.info.uid=10123","fmt":"android","schema_version":1}
+{"seq":8,"time":"2024-04-19T14:23:40.234Z","level":"I","pid":12345,"tid":12345,"tag":"art","msg":"Late-enabling -Xcheck:jni","fmt":"android","schema_version":1}
+{"seq":9,"time":"2024-04-19T14:23:40.278Z","level":"D","pid":12345,"tid":12345,"tag":"NetworkSecurityConfig","msg":"No Network Security Config specified, using platform default","fmt":"android","schema_version":1}
+{"seq":10,"time":"2024-04-19T14:23:40.301Z","level":"D","pid":12345,"tid":12345,"tag":"ExampleApp","msg":"onCreate(savedInstanceState=null)","fmt":"android","schema_version":1}
+{"seq":11,"time":"2024-04-19T14:23:40.345Z","level":"I","pid":12345,"tid":12345,"tag":"ExampleApp","msg":"initializing analytics","fmt":"android","schema_version":1}
+{"seq":12,"time":"2024-04-19T14:23:40.389Z","level":"D","pid":12345,"tid":12367,"tag":"HeapTaskDaemon","msg":"starting","fmt":"android","schema_version":1}
+{"seq":13,"time":"2024-04-19T14:23:40.412Z","level":"I","pid":12345,"tid":12345,"tag":"ActivityManager","msg":"Displayed com.example.app/.MainActivity: +312ms","fmt":"android","schema_version":1}
+{"seq":14,"time":"2024-04-19T14:23:40.523Z","level":"D","pid":12345,"tid":12345,"tag":"MainActivity","msg":"onStart","fmt":"android","schema_version":1}
+{"seq":15,"time":"2024-04-19T14:23:41.001Z","level":"D","pid":12345,"tid":12345,"tag":"MainActivity","msg":"onResume","fmt":"android","schema_version":1}
+{"seq":16,"time":"2024-04-19T14:23:41.12Z","level":"V","pid":12345,"tid":12345,"tag":"MainActivity","msg":"refreshUi()","fmt":"android","schema_version":1}
+{"seq":17,"time":"2024-04-19T14:23:41.134Z","level":"D","pid":12345,"tid":12345,"tag":"SyncManager","msg":"state=IDLE last_sync=-1","fmt":"android","schema_version":1}
+{"seq":18,"time":"2024-04-19T14:23:43.455Z","level":"D","pid":12345,"tid":12345,"tag":"MainActivity","msg":"user scrolled list to 12","fmt":"android","schema_version":1}
+{"seq":19,"time":"2024-04-19T14:23:45.123Z","level":"D","pid":12345,"tid":12345,"tag":"MainActivity","msg":"user tapped \"Sync\"","fmt":"android","schema_version":1}
+{"seq":20,"time":"2024-04-19T14:23:45.124Z","level":"D","pid":12345,"tid":12345,"tag":"MainActivity","msg":"starting sync on main thread (warn: blocks UI)","fmt":"android","schema_version":1}
+{"seq":21,"time":"2024-04-19T14:23:45.126Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 1/8 fetch catalog","fmt":"android","schema_version":1}
+{"seq":22,"time":"2024-04-19T14:23:46.301Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 2/8 decode response (8924 items)","fmt":"android","schema_version":1}
+{"seq":23,"time":"2024-04-19T14:23:47.455Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 3/8 diff with local db","fmt":"android","schema_version":1}
+{"seq":24,"time":"2024-04-19T14:23:48.301Z","level":"W","pid":12345,"tid":12345,"tag":"Choreographer","msg":"Skipped 61 frames!  The application may be doing too much work on its main thread.","fmt":"android","schema_version":1}
+{"seq":25,"time":"2024-04-19T14:23:49.12Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 4/8 apply deletes (412)","fmt":"android","schema_version":1}
+{"seq":26,"time":"2024-04-19T14:23:50.554Z","level":"W","pid":12345,"tid":12345,"tag":"Choreographer","msg":"Skipped 147 frames!  The application may be doing too much work on its main thread.","fmt":"android","schema_version":1}
+{"seq":27,"time":"2024-04-19T14:23:51.008Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 5/8 apply inserts (3120)","fmt":"android","schema_version":1}
+{"seq":28,"time":"2024-04-19T14:23:52.123Z","level":"W","pid":12345,"tid":12345,"tag":"MainActivity","msg":"still running sync...","fmt":"android","schema_version":1}
+{"seq":29,"time":"2024-04-19T14:23:53.445Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 6/8 rebuild indexes","fmt":"android","schema_version":1}
+{"seq":30,"time":"2024-04-19T14:23:54.445Z","level":"W","pid":12345,"tid":12345,"tag":"Choreographer","msg":"Skipped 302 frames!  The application may be doing too much work on its main thread.","fmt":"android","schema_version":1}
+{"seq":31,"time":"2024-04-19T14:23:55.001Z","level":"I","pid":1245,"tid":3301,"tag":"InputReader","msg":"Reconfiguring input devices. changes=0x00000010","fmt":"android","schema_version":1}
+{"seq":32,"time":"2024-04-19T14:23:55.012Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 7/8 vacuum","fmt":"android","schema_version":1}
+{"seq":33,"time":"2024-04-19T14:23:56.234Z","level":"V","pid":12345,"tid":12345,"tag":"MainActivity","msg":"heap_alloc=412MB rss=520MB","fmt":"android","schema_version":1}
+{"seq":34,"time":"2024-04-19T14:23:57.1Z","level":"W","pid":12345,"tid":12345,"tag":"Choreographer","msg":"Skipped 481 frames!  The application may be doing too much work on its main thread.","fmt":"android","schema_version":1}
+{"seq":35,"time":"2024-04-19T14:23:58.201Z","level":"W","pid":1245,"tid":3301,"tag":"InputDispatcher","msg":"channel 'com.example.app/com.example.app.MainActivity' ~ Consumer closed input channel or an error occurred. events=0x9","fmt":"android","schema_version":1}
+{"seq":36,"time":"2024-04-19T14:23:58.202Z","level":"E","pid":1245,"tid":3301,"tag":"InputDispatcher","msg":"channel 'com.example.app/com.example.app.MainActivity' ~ Channel is unrecoverably broken and will be disposed!","fmt":"android","schema_version":1}
+{"seq":37,"time":"2024-04-19T14:24:00Z","level":"W","pid":1245,"tid":3301,"tag":"InputDispatcher","msg":"Application is not responding: Window{6d2c3b0 u0 com.example.app/com.example.app.MainActivity}.  5000ms since event, 5001ms since wait started.","fmt":"android","schema_version":1}
+{"seq":38,"time":"2024-04-19T14:24:00.001Z","level":"I","pid":1245,"tid":3301,"tag":"InputDispatcher","msg":"Window com.example.app/.MainActivity is unresponsive: 5000ms","fmt":"android","schema_version":1}
+{"seq":39,"time":"2024-04-19T14:24:02.412Z","level":"D","pid":12345,"tid":12345,"tag":"SyncWorker","msg":"step 8/8 commit","fmt":"android","schema_version":1}
+{"seq":40,"time":"2024-04-19T14:24:05.412Z","level":"W","pid":12345,"tid":12345,"tag":"Choreographer","msg":"Skipped 621 frames!  The application may be doing too much work on its main thread.","fmt":"android","schema_version":1}
+{"seq":41,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"ANR in com.example.app (com.example.app/.MainActivity)","fmt":"android","schema_version":1}
+{"seq":42,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"PID: 12345","fmt":"android","schema_version":1}
+{"seq":43,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Reason: Input dispatching timed out (Waiting because no window has focus but there is a focused application that may eventually add a window when it finishes starting up.)","fmt":"android","schema_version":1}
+{"seq":44,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Parent: com.example.app/.MainActivity","fmt":"android","schema_version":1}
+{"seq":45,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Frozen: false","fmt":"android","schema_version":1}
+{"seq":46,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Load: 4.52 / 3.91 / 3.82","fmt":"android","schema_version":1}
+{"seq":47,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"----- CPU usage from 0ms to 5412ms later (2024-04-19 14:24:05.044 to 2024-04-19 14:24:10.456) -----","fmt":"android","schema_version":1}
+{"seq":48,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"  45% 12345/com.example.app: 40% user + 5% kernel / faults: 312 minor","fmt":"android","schema_version":1}
+{"seq":49,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"    41% 12345/com.example.app: 37% user + 4% kernel","fmt":"android","schema_version":1}
+{"seq":50,"time":"2024-04-19T14:24:10.456Z","level":"E","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"    3% 12367/HeapTaskDaemon: 2% user + 1% kernel","fmt":"android","schema_version":1}

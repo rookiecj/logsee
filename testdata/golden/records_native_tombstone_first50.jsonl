@@ -1,0 +1,50 @@
+{"seq":1,"time":"2024-04-19T15:09:50.001Z","level":"I","pid":1245,"tid":1245,"tag":"ActivityManager","msg":"Foreground activities changed: com.example.native","fmt":"android","schema_version":1}
+{"seq":2,"time":"2024-04-19T15:09:55.001Z","level":"I","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Start proc 15678:com.example.native/u0a125 for activity {com.example.native/.MainActivity}","fmt":"android","schema_version":1}
+{"seq":3,"time":"2024-04-19T15:09:55.089Z","level":"I","pid":15678,"tid":15678,"tag":"Zygote","msg":"Process forked for com.example.native","fmt":"android","schema_version":1}
+{"seq":4,"time":"2024-04-19T15:09:55.134Z","level":"I","pid":15678,"tid":15678,"tag":"art","msg":"Late-enabling -Xcheck:jni","fmt":"android","schema_version":1}
+{"seq":5,"time":"2024-04-19T15:09:55.189Z","level":"D","pid":15678,"tid":15678,"tag":"ExampleNative","msg":"onCreate","fmt":"android","schema_version":1}
+{"seq":6,"time":"2024-04-19T15:09:55.201Z","level":"D","pid":15678,"tid":15678,"tag":"ExampleNative","msg":"loading libnative.so","fmt":"android","schema_version":1}
+{"seq":7,"time":"2024-04-19T15:09:55.256Z","level":"I","pid":15678,"tid":15678,"tag":"linker","msg":"Linking libnative.so","fmt":"android","schema_version":1}
+{"seq":8,"time":"2024-04-19T15:09:55.301Z","level":"I","pid":15678,"tid":15678,"tag":"native","msg":"JNI_OnLoad called","fmt":"android","schema_version":1}
+{"seq":9,"time":"2024-04-19T15:09:55.345Z","level":"D","pid":15678,"tid":15678,"tag":"native","msg":"build_id=fedcba987654 version=1.2.3","fmt":"android","schema_version":1}
+{"seq":10,"time":"2024-04-19T15:09:55.412Z","level":"D","pid":15678,"tid":15678,"tag":"ExampleNative","msg":"ready","fmt":"android","schema_version":1}
+{"seq":11,"time":"2024-04-19T15:09:55.501Z","level":"I","pid":15678,"tid":15678,"tag":"ActivityManager","msg":"Displayed com.example.native/.MainActivity: +412ms","fmt":"android","schema_version":1}
+{"seq":12,"time":"2024-04-19T15:09:56.002Z","level":"D","pid":15678,"tid":15678,"tag":"MainActivity","msg":"onResume","fmt":"android","schema_version":1}
+{"seq":13,"time":"2024-04-19T15:10:10.001Z","level":"V","pid":15678,"tid":15678,"tag":"MainActivity","msg":"user tapped \"Run\"","fmt":"android","schema_version":1}
+{"seq":14,"time":"2024-04-19T15:10:10.002Z","level":"D","pid":15678,"tid":15678,"tag":"MainActivity","msg":"dispatching worker on pool thread","fmt":"android","schema_version":1}
+{"seq":15,"time":"2024-04-19T15:10:10.1Z","level":"I","pid":15678,"tid":15691,"tag":"native-worker","msg":"started","fmt":"android","schema_version":1}
+{"seq":16,"time":"2024-04-19T15:10:10.201Z","level":"D","pid":15678,"tid":15691,"tag":"native-worker","msg":"allocating 1MB buffer","fmt":"android","schema_version":1}
+{"seq":17,"time":"2024-04-19T15:10:10.256Z","level":"D","pid":15678,"tid":15691,"tag":"native","msg":"populating table from input (size=8192)","fmt":"android","schema_version":1}
+{"seq":18,"time":"2024-04-19T15:10:10.312Z","level":"V","pid":15678,"tid":15691,"tag":"native","msg":"row 0 ok","fmt":"android","schema_version":1}
+{"seq":19,"time":"2024-04-19T15:10:20.001Z","level":"D","pid":15678,"tid":15678,"tag":"MainActivity","msg":"user tapped \"Process\"","fmt":"android","schema_version":1}
+{"seq":20,"time":"2024-04-19T15:10:20.002Z","level":"D","pid":15678,"tid":15678,"tag":"MainActivity","msg":"calling into native doWork()","fmt":"android","schema_version":1}
+{"seq":21,"time":"2024-04-19T15:10:20.1Z","level":"D","pid":15678,"tid":15691,"tag":"native","msg":"entering doWork(ptr=0x7ff123abcd len=-1)","fmt":"android","schema_version":1}
+{"seq":22,"time":"2024-04-19T15:10:20.105Z","level":"W","pid":15678,"tid":15691,"tag":"native","msg":"doWork: unexpected len=-1 but proceeding","fmt":"android","schema_version":1}
+{"seq":23,"time":"2024-04-19T15:10:22.001Z","level":"I","pid":1245,"tid":1301,"tag":"ActivityManager","msg":"Process com.example.native (pid 15678) has died: sig 11","fmt":"android","schema_version":1}
+{"seq":24,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***","fmt":"android","schema_version":1}
+{"seq":25,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Build fingerprint: 'samsung/universal2100/exynos:13/TQ3A.230705.001/20230715:user/release-keys'","fmt":"android","schema_version":1}
+{"seq":26,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Revision: '0'","fmt":"android","schema_version":1}
+{"seq":27,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"ABI: 'arm64'","fmt":"android","schema_version":1}
+{"seq":28,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Processor: 5","fmt":"android","schema_version":1}
+{"seq":29,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Timestamp: 2024-04-19 15:10:22.001+0900","fmt":"android","schema_version":1}
+{"seq":30,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Process uptime: 27s","fmt":"android","schema_version":1}
+{"seq":31,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Cmdline: com.example.native","fmt":"android","schema_version":1}
+{"seq":32,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"pid: 15678, tid: 15691, name: native-worker  \u003e\u003e\u003e com.example.native \u003c\u003c\u003c","fmt":"android","schema_version":1}
+{"seq":33,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"uid: 10125","fmt":"android","schema_version":1}
+{"seq":34,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)","fmt":"android","schema_version":1}
+{"seq":35,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)","fmt":"android","schema_version":1}
+{"seq":36,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"signal 11 (SIGSEGV), code 1 (SEGV_MAPERR), fault addr 0x0","fmt":"android","schema_version":1}
+{"seq":37,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"Cause: null pointer dereference","fmt":"android","schema_version":1}
+{"seq":38,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x0  0000000000000000  x1  0000007ff123abcd  x2  0000000000000042  x3  0000000000000001","fmt":"android","schema_version":1}
+{"seq":39,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x4  0000000000000020  x5  0000007fa1b2c3d4  x6  0000000000000000  x7  0000000000000000","fmt":"android","schema_version":1}
+{"seq":40,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x8  000000000000000f  x9  0000000000000000  x10 0000000000000001  x11 0000000000000002","fmt":"android","schema_version":1}
+{"seq":41,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x12 0000000000000003  x13 0000000000000004  x14 0000000000000005  x15 0000000000000006","fmt":"android","schema_version":1}
+{"seq":42,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x16 0000007fc12345ab  x17 0000007fc9876543  x18 0000007fb0001000  x19 0000007ff1234000","fmt":"android","schema_version":1}
+{"seq":43,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x20 0000000000000000  x21 0000007fa9876abc  x22 0000007fb5555555  x23 0000000000000000","fmt":"android","schema_version":1}
+{"seq":44,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x24 0000000000000000  x25 0000007fe4444444  x26 0000007fd3333333  x27 0000000000000000","fmt":"android","schema_version":1}
+{"seq":45,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    x28 0000000000000000  x29 0000007fc2222222","fmt":"android","schema_version":1}
+{"seq":46,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"    lr  0000007fe0adb500  sp  0000007fc2222200  pc  0000007fe0adb54c  pst 0000000060000000","fmt":"android","schema_version":1}
+{"seq":47,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"backtrace:","fmt":"android","schema_version":1}
+{"seq":48,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"      #00 pc 00000000000123f0  /apex/com.android.runtime/lib64/bionic/libc.so (strlen+32) (BuildId: abc123def456789a)","fmt":"android","schema_version":1}
+{"seq":49,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"      #01 pc 00000000000adb54  /data/app/~~abc==/com.example.native-xyz==/lib/arm64/libnative.so (doWork(char const*, int)+120) (BuildId: fedcba9876543210)","fmt":"android","schema_version":1}
+{"seq":50,"time":"2024-04-19T15:10:22.1Z","level":"F","pid":4567,"tid":4567,"tag":"DEBUG","msg":"      #02 pc 00000000000adff0  /data/app/~~abc==/com.example.native-xyz==/lib/arm64/libnative.so (Java_com_example_native_NativeLib_doWork+32) (BuildId: fedcba9876543210)","fmt":"android","schema_version":1}
