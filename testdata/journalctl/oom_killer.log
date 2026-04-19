@@ -1,0 +1,100 @@
+2024-04-19T02:00:01.234567+0000 app-worker-03 CRON[4512]: (root) CMD (/usr/local/bin/report-stats.sh)
+2024-04-19T02:00:05.089012+0000 app-worker-03 systemd[1]: Starting logrotate.service - Rotate log files...
+2024-04-19T02:00:05.112345+0000 app-worker-03 systemd[1]: logrotate.service: Deactivated successfully.
+2024-04-19T02:00:05.134567+0000 app-worker-03 systemd[1]: Finished logrotate.service - Rotate log files.
+2024-04-19T02:01:00.001234+0000 app-worker-03 CRON[4534]: (root) CMD (/usr/local/bin/queue-worker.sh --batch)
+2024-04-19T02:01:15.089012+0000 app-worker-03 queue-worker[4546]: started batch job-queue, concurrency=32
+2024-04-19T02:01:30.112345+0000 app-worker-03 queue-worker[4546]: processed 1200 messages in 15s
+2024-04-19T02:02:00.001234+0000 app-worker-03 CRON[4589]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T02:02:05.089012+0000 app-worker-03 metric-push[4601]: pushed 42 metrics to collector
+2024-04-19T02:03:00.001234+0000 app-worker-03 CRON[4634]: (root) CMD (/usr/local/bin/queue-worker.sh --batch)
+2024-04-19T02:03:02.089012+0000 app-worker-03 queue-worker[4646]: started batch job-queue, concurrency=32
+2024-04-19T02:03:30.112345+0000 app-worker-03 queue-worker[4646]: processed 4800 messages in 28s
+2024-04-19T02:04:00.001234+0000 app-worker-03 CRON[4689]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T02:04:05.089012+0000 app-worker-03 metric-push[4701]: pushed 42 metrics to collector
+2024-04-19T02:05:00.001234+0000 app-worker-03 CRON[4734]: (root) CMD (/usr/local/bin/queue-worker.sh --batch)
+2024-04-19T02:05:02.089012+0000 app-worker-03 queue-worker[4746]: started batch job-queue, concurrency=32
+2024-04-19T02:05:15.112345+0000 app-worker-03 kernel: queue-worker invoked oom-killer: gfp_mask=0x100cca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0
+2024-04-19T02:05:15.123456+0000 app-worker-03 kernel: CPU: 2 PID: 4746 Comm: queue-worker Tainted: G            E     6.5.0-26-generic #26-Ubuntu
+2024-04-19T02:05:15.134567+0000 app-worker-03 kernel: Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS Google 10/27/2023
+2024-04-19T02:05:15.145678+0000 app-worker-03 kernel: Call Trace:
+2024-04-19T02:05:15.156789+0000 app-worker-03 kernel:  <TASK>
+2024-04-19T02:05:15.167890+0000 app-worker-03 kernel:  dump_stack_lvl+0x48/0x70
+2024-04-19T02:05:15.178901+0000 app-worker-03 kernel:  dump_stack+0x10/0x20
+2024-04-19T02:05:15.189012+0000 app-worker-03 kernel:  dump_header+0x47/0x1f0
+2024-04-19T02:05:15.201234+0000 app-worker-03 kernel:  oom_kill_process+0x104/0x2a0
+2024-04-19T02:05:15.212345+0000 app-worker-03 kernel:  out_of_memory+0x26e/0x550
+2024-04-19T02:05:15.223456+0000 app-worker-03 kernel:  __alloc_pages_slowpath+0x966/0xc70
+2024-04-19T02:05:15.234567+0000 app-worker-03 kernel:  __alloc_pages+0x334/0x360
+2024-04-19T02:05:15.245678+0000 app-worker-03 kernel:  alloc_pages+0x91/0x180
+2024-04-19T02:05:15.256789+0000 app-worker-03 kernel:  folio_alloc+0x1e/0x60
+2024-04-19T02:05:15.267890+0000 app-worker-03 kernel:  shmem_alloc_folio+0xa2/0x120
+2024-04-19T02:05:15.278901+0000 app-worker-03 kernel:  </TASK>
+2024-04-19T02:05:15.289012+0000 app-worker-03 kernel: Mem-Info:
+2024-04-19T02:05:15.301234+0000 app-worker-03 kernel: active_anon:1820412 inactive_anon:423891 isolated_anon:0 active_file:824 inactive_file:234 isolated_file:0
+2024-04-19T02:05:15.312345+0000 app-worker-03 kernel: Node 0 active_anon:7281648kB inactive_anon:1695564kB active_file:3296kB inactive_file:936kB
+2024-04-19T02:05:15.323456+0000 app-worker-03 kernel: Node 0 DMA free:11240kB boost:0kB min:44kB low:56kB high:68kB reserved_highatomic:0KB
+2024-04-19T02:05:15.334567+0000 app-worker-03 kernel: Node 0 DMA32 free:45600kB boost:0kB min:4516kB low:5644kB high:6772kB
+2024-04-19T02:05:15.345678+0000 app-worker-03 kernel: Node 0 Normal free:234560kB boost:0kB min:28908kB low:36135kB high:43362kB
+2024-04-19T02:05:15.356789+0000 app-worker-03 kernel: Tasks state (memory values in pages):
+2024-04-19T02:05:15.367890+0000 app-worker-03 kernel: [  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+2024-04-19T02:05:15.378901+0000 app-worker-03 kernel: [    912]     0   912    22318     2048   208896        0             0 systemd-logind
+2024-04-19T02:05:15.389012+0000 app-worker-03 kernel: [   1034]   123  1034    20145     1824   172032        0             0 chronyd
+2024-04-19T02:05:15.401234+0000 app-worker-03 kernel: [   1145]     0  1145    89234     4512   516096        0          -900 dockerd
+2024-04-19T02:05:15.412345+0000 app-worker-03 kernel: [   4746]  1000  4746  2147483     1820412 14676992        0             0 queue-worker
+2024-04-19T02:05:15.423456+0000 app-worker-03 kernel: oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/system.slice/queue-worker.service,task=queue-worker,pid=4746,uid=1000
+2024-04-19T02:05:15.434567+0000 app-worker-03 kernel: Out of memory: Killed process 4746 (queue-worker) total-vm:8589934592kB, anon-rss:7281648kB, file-rss:0kB, shmem-rss:0kB, UID:1000 pgtables:14340kB oom_score_adj:0
+2024-04-19T02:05:16.089012+0000 app-worker-03 systemd[1]: queue-worker.service: A process of this unit has been killed by the OOM killer.
+2024-04-19T02:05:16.112345+0000 app-worker-03 systemd[1]: queue-worker.service: Main process exited, code=killed, status=9/KILL
+2024-04-19T02:05:16.134567+0000 app-worker-03 systemd[1]: queue-worker.service: Failed with result 'oom-kill'.
+2024-04-19T02:05:16.156789+0000 app-worker-03 systemd[1]: queue-worker.service: Consumed 2min 45.892s CPU time, 6.9G memory peak.
+2024-04-19T02:05:16.178901+0000 app-worker-03 systemd[1]: queue-worker.service: Scheduled restart job, restart counter is at 1.
+2024-04-19T02:05:16.189012+0000 app-worker-03 systemd[1]: Stopped queue-worker.service - Application queue worker.
+2024-04-19T02:05:17.001234+0000 app-worker-03 systemd[1]: Starting queue-worker.service - Application queue worker...
+2024-04-19T02:05:17.045678+0000 app-worker-03 queue-worker[4856]: started batch job-queue, concurrency=32
+2024-04-19T02:05:17.089012+0000 app-worker-03 systemd[1]: Started queue-worker.service - Application queue worker.
+2024-04-19T02:05:30.112345+0000 app-worker-03 queue-worker[4856]: processed 600 messages in 13s
+2024-04-19T02:06:00.001234+0000 app-worker-03 CRON[4889]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T02:06:05.089012+0000 app-worker-03 metric-push[4901]: pushed 45 metrics to collector
+2024-04-19T02:06:05.112345+0000 app-worker-03 metric-push[4901]: alert: node memory_pressure=1
+2024-04-19T02:06:15.089012+0000 app-worker-03 pagerduty-alert[4912]: incident created: PD-OOM-20240419-0205 severity=high
+2024-04-19T02:06:30.112345+0000 app-worker-03 kernel: queue-worker invoked oom-killer: gfp_mask=0x100cca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0
+2024-04-19T02:06:30.123456+0000 app-worker-03 kernel: CPU: 5 PID: 4856 Comm: queue-worker Tainted: G            E     6.5.0-26-generic #26-Ubuntu
+2024-04-19T02:06:30.134567+0000 app-worker-03 kernel: Mem-Info:
+2024-04-19T02:06:30.145678+0000 app-worker-03 kernel: active_anon:1834520 inactive_anon:430012
+2024-04-19T02:06:30.156789+0000 app-worker-03 kernel: oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/system.slice/queue-worker.service,task=queue-worker,pid=4856,uid=1000
+2024-04-19T02:06:30.167890+0000 app-worker-03 kernel: Out of memory: Killed process 4856 (queue-worker) total-vm:8589934592kB, anon-rss:7338080kB, file-rss:0kB, shmem-rss:0kB, UID:1000 pgtables:14348kB oom_score_adj:0
+2024-04-19T02:06:31.089012+0000 app-worker-03 systemd[1]: queue-worker.service: A process of this unit has been killed by the OOM killer.
+2024-04-19T02:06:31.112345+0000 app-worker-03 systemd[1]: queue-worker.service: Main process exited, code=killed, status=9/KILL
+2024-04-19T02:06:31.134567+0000 app-worker-03 systemd[1]: queue-worker.service: Failed with result 'oom-kill'.
+2024-04-19T02:06:31.156789+0000 app-worker-03 systemd[1]: queue-worker.service: Scheduled restart job, restart counter is at 2.
+2024-04-19T02:06:32.001234+0000 app-worker-03 systemd[1]: Starting queue-worker.service - Application queue worker...
+2024-04-19T02:06:32.045678+0000 app-worker-03 queue-worker[4989]: started batch job-queue, concurrency=32
+2024-04-19T02:06:32.089012+0000 app-worker-03 systemd[1]: Started queue-worker.service - Application queue worker.
+2024-04-19T02:06:45.112345+0000 app-worker-03 sshd[5012]: Accepted publickey for ops from 10.0.5.18 port 51278 ssh2
+2024-04-19T02:06:45.134567+0000 app-worker-03 systemd-logind[912]: New session 7 of user ops.
+2024-04-19T02:06:50.089012+0000 app-worker-03 sudo[5034]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/systemctl stop queue-worker.service
+2024-04-19T02:06:50.112345+0000 app-worker-03 sudo[5034]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T02:06:50.134567+0000 app-worker-03 systemd[1]: Stopping queue-worker.service - Application queue worker...
+2024-04-19T02:06:50.156789+0000 app-worker-03 systemd[1]: queue-worker.service: Deactivated successfully.
+2024-04-19T02:06:50.178901+0000 app-worker-03 systemd[1]: Stopped queue-worker.service - Application queue worker.
+2024-04-19T02:06:50.189012+0000 app-worker-03 sudo[5034]: pam_unix(sudo:session): session closed for user root
+2024-04-19T02:07:00.001234+0000 app-worker-03 CRON[5067]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T02:07:05.089012+0000 app-worker-03 metric-push[5078]: pushed 45 metrics to collector
+2024-04-19T02:07:15.112345+0000 app-worker-03 sudo[5089]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/systemctl edit --full queue-worker.service
+2024-04-19T02:07:15.134567+0000 app-worker-03 sudo[5089]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T02:07:30.089012+0000 app-worker-03 sudo[5089]: pam_unix(sudo:session): session closed for user root
+2024-04-19T02:07:35.089012+0000 app-worker-03 systemd[1]: Reloading systemd manager configuration...
+2024-04-19T02:07:35.123456+0000 app-worker-03 systemd[1]: Reloaded systemd manager configuration.
+2024-04-19T02:07:40.089012+0000 app-worker-03 sudo[5134]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/systemctl start queue-worker.service
+2024-04-19T02:07:40.112345+0000 app-worker-03 systemd[1]: Starting queue-worker.service - Application queue worker...
+2024-04-19T02:07:40.145678+0000 app-worker-03 queue-worker[5145]: started batch job-queue, concurrency=16
+2024-04-19T02:07:40.167890+0000 app-worker-03 systemd[1]: Started queue-worker.service - Application queue worker.
+2024-04-19T02:07:55.089012+0000 app-worker-03 queue-worker[5145]: processed 300 messages in 15s (reduced concurrency)
+2024-04-19T02:08:00.001234+0000 app-worker-03 CRON[5178]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T02:08:05.089012+0000 app-worker-03 metric-push[5189]: pushed 45 metrics to collector (memory_pressure=0 after restart)
+2024-04-19T02:08:10.112345+0000 app-worker-03 pagerduty-alert[4912]: incident resolved: PD-OOM-20240419-0205
+2024-04-19T02:08:15.089012+0000 app-worker-03 sshd[5012]: Received disconnect from 10.0.5.18 port 51278:11: disconnected by user
+2024-04-19T02:08:15.112345+0000 app-worker-03 systemd-logind[912]: Session 7 logged out.
+2024-04-19T02:08:15.134567+0000 app-worker-03 systemd-logind[912]: Removed session 7.
+2024-04-19T02:09:00.001234+0000 app-worker-03 CRON[5234]: (root) CMD (/usr/local/bin/queue-worker.sh --batch)

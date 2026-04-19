@@ -1,0 +1,114 @@
+2024-04-19T14:22:10.001234+0900 build01 systemd[1]: Starting nginx.service - nginx - high performance web server...
+2024-04-19T14:22:10.045612+0900 build01 nginx[4521]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+2024-04-19T14:22:10.078901+0900 build01 nginx[4521]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+2024-04-19T14:22:10.124567+0900 build01 systemd[1]: nginx.service: Control process exited, code=exited, status=0/SUCCESS
+2024-04-19T14:22:10.189234+0900 build01 systemd[1]: Started nginx.service - nginx - high performance web server.
+2024-04-19T14:22:10.245012+0900 build01 nginx[4525]: 2024/04/19 14:22:10 [notice] 4525#4525: nginx/1.24.0 (Ubuntu)
+2024-04-19T14:22:10.278456+0900 build01 nginx[4525]: 2024/04/19 14:22:10 [notice] 4525#4525: OS: Linux 6.5.0-26-generic
+2024-04-19T14:22:10.312901+0900 build01 nginx[4525]: 2024/04/19 14:22:10 [notice] 4525#4525: worker processes: 8
+2024-04-19T14:22:15.102345+0900 build01 sshd[4512]: Accepted publickey for ops from 10.0.1.12 port 51234 ssh2
+2024-04-19T14:22:15.134567+0900 build01 systemd-logind[912]: New session 42 of user ops.
+2024-04-19T14:22:20.045678+0900 build01 cron[1034]: (root) CMD (/usr/sbin/logrotate /etc/logrotate.conf)
+2024-04-19T14:22:45.198234+0900 build01 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=... SRC=192.0.2.10 DST=10.0.1.5 LEN=60 TOS=0x00 PREC=0x00 TTL=52 ID=54321 PROTO=TCP SPT=34521 DPT=4444
+2024-04-19T14:23:00.001001+0900 build01 CRON[4612]: (root) CMD (/usr/local/bin/monitor.sh)
+2024-04-19T14:23:05.089012+0900 build01 nginx[4525]: 2024/04/19 14:23:05 [info] 4525#4525: reconfiguring
+2024-04-19T14:23:05.123456+0900 build01 nginx[4525]: 2024/04/19 14:23:05 [error] 4525#4525: *1234 upstream timed out (110: Connection timed out) while reading response header from upstream, client: 10.0.2.40
+2024-04-19T14:23:10.045678+0900 build01 systemd[1]: Reloading nginx.service - nginx - high performance web server...
+2024-04-19T14:23:10.089012+0900 build01 nginx[4687]: nginx: [emerg] cannot load certificate "/etc/nginx/certs/api.pem": BIO_new_file() failed (SSL: error:80000002:system library::No such file or directory:fopen('/etc/nginx/certs/api.pem','r'))
+2024-04-19T14:23:10.123456+0900 build01 nginx[4687]: nginx: configuration file /etc/nginx/nginx.conf test failed
+2024-04-19T14:23:10.145678+0900 build01 systemd[1]: nginx.service: Control process exited, code=exited, status=1/FAILURE
+2024-04-19T14:23:10.167890+0900 build01 systemd[1]: Reload failed for nginx.service - nginx - high performance web server.
+2024-04-19T14:23:15.201234+0900 build01 systemd[1]: nginx.service: Main process exited, code=killed, status=11/SEGV
+2024-04-19T14:23:15.234567+0900 build01 systemd[1]: nginx.service: Failed with result 'signal'.
+2024-04-19T14:23:15.289012+0900 build01 systemd[1]: nginx.service: Consumed 1.245s CPU time.
+2024-04-19T14:23:15.312345+0900 build01 systemd[1]: nginx.service: Scheduled restart job, restart counter is at 1.
+2024-04-19T14:23:15.345678+0900 build01 systemd[1]: Stopped nginx.service - nginx - high performance web server.
+2024-04-19T14:23:16.001234+0900 build01 systemd[1]: Starting nginx.service - nginx - high performance web server...
+2024-04-19T14:23:16.023456+0900 build01 nginx[4712]: nginx: [emerg] cannot load certificate "/etc/nginx/certs/api.pem": BIO_new_file() failed
+2024-04-19T14:23:16.034567+0900 build01 nginx[4712]: nginx: configuration file /etc/nginx/nginx.conf test failed
+2024-04-19T14:23:16.056789+0900 build01 systemd[1]: nginx.service: Control process exited, code=exited, status=1/FAILURE
+2024-04-19T14:23:16.078901+0900 build01 systemd[1]: nginx.service: Failed with result 'exit-code'.
+2024-04-19T14:23:16.089012+0900 build01 systemd[1]: Failed to start nginx.service - nginx - high performance web server.
+2024-04-19T14:23:16.112345+0900 build01 systemd[1]: nginx.service: Scheduled restart job, restart counter is at 2.
+2024-04-19T14:23:21.134567+0900 build01 systemd[1]: Starting nginx.service - nginx - high performance web server...
+2024-04-19T14:23:21.156789+0900 build01 nginx[4734]: nginx: [emerg] cannot load certificate "/etc/nginx/certs/api.pem": BIO_new_file() failed
+2024-04-19T14:23:21.178901+0900 build01 nginx[4734]: nginx: configuration file /etc/nginx/nginx.conf test failed
+2024-04-19T14:23:21.189012+0900 build01 systemd[1]: nginx.service: Control process exited, code=exited, status=1/FAILURE
+2024-04-19T14:23:21.201234+0900 build01 systemd[1]: nginx.service: Failed with result 'exit-code'.
+2024-04-19T14:23:21.223456+0900 build01 systemd[1]: Failed to start nginx.service - nginx - high performance web server.
+2024-04-19T14:23:21.234567+0900 build01 systemd[1]: nginx.service: Start request repeated too quickly.
+2024-04-19T14:23:21.245678+0900 build01 systemd[1]: nginx.service: Failed with result 'exit-code'.
+2024-04-19T14:23:21.267890+0900 build01 systemd[1]: Failed to start nginx.service - nginx - high performance web server.
+2024-04-19T14:23:21.289012+0900 build01 systemd[1]: nginx.service: Triggering OnFailure= dependencies.
+2024-04-19T14:23:22.001234+0900 build01 systemd[1]: Started pagerduty-alert@nginx.service - Page on-call for nginx.
+2024-04-19T14:23:22.045678+0900 build01 pagerduty-alert[4801]: incident created: PD-ABCD1234 severity=high
+2024-04-19T14:23:30.001234+0900 build01 systemd[1]: session-42.scope: Deactivated successfully.
+2024-04-19T14:23:30.023456+0900 build01 systemd-logind[912]: Session 42 logged out. Waiting for processes to exit.
+2024-04-19T14:23:30.045678+0900 build01 systemd-logind[912]: Removed session 42.
+2024-04-19T14:24:00.001234+0900 build01 CRON[4834]: (root) CMD (/usr/sbin/logrotate /etc/logrotate.conf)
+2024-04-19T14:24:05.089012+0900 build01 systemd-tmpfiles[4845]: /usr/lib/tmpfiles.d/mlocate.conf:1: Duplicate line for path "/var/lib/mlocate", ignoring.
+2024-04-19T14:24:12.178901+0900 build01 chronyd[1089]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T14:24:18.045123+0900 build01 kernel: audit: type=1400 audit(1713505458.045:234): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/bin/man" pid=4859 comm="apparmor_parser"
+2024-04-19T14:24:25.112345+0900 build01 sshd[4867]: Accepted publickey for ops from 10.0.1.12 port 51244 ssh2
+2024-04-19T14:24:25.134567+0900 build01 systemd-logind[912]: New session 43 of user ops.
+2024-04-19T14:24:30.089012+0900 build01 sudo[4889]: ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/systemctl reset-failed nginx.service
+2024-04-19T14:24:30.112345+0900 build01 sudo[4889]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T14:24:30.134567+0900 build01 systemd[1]: Reset failed state of unit nginx.service.
+2024-04-19T14:24:30.156789+0900 build01 sudo[4889]: pam_unix(sudo:session): session closed for user root
+2024-04-19T14:24:35.001234+0900 build01 sudo[4912]: ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/cp /home/ops/api.pem /etc/nginx/certs/api.pem
+2024-04-19T14:24:35.023456+0900 build01 sudo[4912]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T14:24:35.045678+0900 build01 sudo[4912]: pam_unix(sudo:session): session closed for user root
+2024-04-19T14:24:40.089012+0900 build01 sudo[4934]: ops : TTY=pts/0 ; PWD=/home/ops ; USER=root ; COMMAND=/usr/bin/systemctl start nginx.service
+2024-04-19T14:24:40.123456+0900 build01 sudo[4934]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T14:24:40.156789+0900 build01 systemd[1]: Starting nginx.service - nginx - high performance web server...
+2024-04-19T14:24:40.189012+0900 build01 nginx[4945]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+2024-04-19T14:24:40.212345+0900 build01 nginx[4945]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+2024-04-19T14:24:40.234567+0900 build01 systemd[1]: nginx.service: Control process exited, code=exited, status=0/SUCCESS
+2024-04-19T14:24:40.245678+0900 build01 systemd[1]: Started nginx.service - nginx - high performance web server.
+2024-04-19T14:24:40.267890+0900 build01 sudo[4934]: pam_unix(sudo:session): session closed for user root
+2024-04-19T14:24:45.089012+0900 build01 nginx[4950]: 2024/04/19 14:24:45 [notice] 4950#4950: nginx/1.24.0 (Ubuntu)
+2024-04-19T14:24:45.112345+0900 build01 nginx[4950]: 2024/04/19 14:24:45 [notice] 4950#4950: signal process started
+2024-04-19T14:24:48.134567+0900 build01 pagerduty-alert[4801]: incident resolved: PD-ABCD1234
+2024-04-19T14:24:48.156789+0900 build01 systemd[1]: pagerduty-alert@nginx.service: Deactivated successfully.
+2024-04-19T14:24:50.089012+0900 build01 systemd[1]: session-43.scope: Deactivated successfully.
+2024-04-19T14:24:50.112345+0900 build01 systemd-logind[912]: Session 43 logged out. Waiting for processes to exit.
+2024-04-19T14:24:50.134567+0900 build01 systemd-logind[912]: Removed session 43.
+2024-04-19T14:25:00.001234+0900 build01 CRON[4989]: (root) CMD (/usr/local/bin/monitor.sh)
+2024-04-19T14:25:05.089012+0900 build01 kernel: [UFW BLOCK] IN=eth0 OUT= MAC=... SRC=192.0.2.11 DST=10.0.1.5 LEN=60 TOS=0x00 PREC=0x00 TTL=51 ID=54322 PROTO=TCP SPT=34522 DPT=22
+2024-04-19T14:25:15.112345+0900 build01 chronyd[1089]: System clock wrong by -0.000042 seconds
+2024-04-19T14:25:20.089012+0900 build01 systemd[1]: Started systemd-hostnamed.service - Hostname Service.
+2024-04-19T14:25:20.112345+0900 build01 systemd-hostnamed[5012]: Changed pretty hostname to 'build01-primary'
+2024-04-19T14:25:20.134567+0900 build01 dbus-daemon[798]: [system] Successfully activated service 'org.freedesktop.hostname1'
+2024-04-19T14:25:21.001234+0900 build01 systemd[1]: systemd-hostnamed.service: Deactivated successfully.
+2024-04-19T14:25:25.089012+0900 build01 rsyslogd[1002]: [origin software="rsyslogd" swVersion="8.2312.0" x-pid="1002" x-info="https://www.rsyslog.com"] start
+2024-04-19T14:25:30.112345+0900 build01 audit[5034]: USER_AUTH pid=5034 uid=0 auid=1000 ses=43 msg='op=PAM:authentication grantors=pam_unix acct="ops" exe="/usr/bin/sudo" hostname=? addr=? terminal=pts/0 res=success'
+2024-04-19T14:25:35.001234+0900 build01 systemd[1]: Starting man-db.service - Daily man-db regeneration...
+2024-04-19T14:25:45.089012+0900 build01 systemd[1]: man-db.service: Deactivated successfully.
+2024-04-19T14:25:45.112345+0900 build01 systemd[1]: Finished man-db.service - Daily man-db regeneration.
+2024-04-19T14:26:00.001234+0900 build01 CRON[5067]: (root) CMD (/usr/sbin/logrotate /etc/logrotate.conf)
+2024-04-19T14:26:05.089012+0900 build01 chronyd[1089]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T14:26:15.112345+0900 build01 nginx[4950]: 2024/04/19 14:26:15 [info] 4950#4950: signal 17 (SIGCHLD) received from 4951
+2024-04-19T14:26:15.134567+0900 build01 nginx[4950]: 2024/04/19 14:26:15 [notice] 4950#4950: worker process 4951 exited with code 0
+2024-04-19T14:26:30.089012+0900 build01 nginx[4950]: 2024/04/19 14:26:30 [notice] 4950#4950: start worker processes
+2024-04-19T14:26:30.112345+0900 build01 nginx[4950]: 2024/04/19 14:26:30 [notice] 4950#4950: start worker process 5103
+2024-04-19T14:27:00.001234+0900 build01 CRON[5134]: (root) CMD (/usr/local/bin/monitor.sh)
+2024-04-19T14:27:05.089012+0900 build01 systemd-resolved[914]: DNSSEC validation failed for question api.example.com IN A: network-failure
+2024-04-19T14:27:05.112345+0900 build01 systemd-resolved[914]: Using degraded feature set UDP instead of UDP+EDNS0 for DNS server 10.0.0.53
+2024-04-19T14:27:10.134567+0900 build01 systemd-resolved[914]: Using feature set UDP+EDNS0 for DNS server 10.0.0.53
+2024-04-19T14:27:20.089012+0900 build01 systemd[1]: Reloading nginx.service - nginx - high performance web server...
+2024-04-19T14:27:20.112345+0900 build01 nginx[5189]: nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+2024-04-19T14:27:20.134567+0900 build01 nginx[5189]: nginx: configuration file /etc/nginx/nginx.conf test is successful
+2024-04-19T14:27:20.156789+0900 build01 systemd[1]: Reloaded nginx.service - nginx - high performance web server.
+2024-04-19T14:27:25.089012+0900 build01 nginx[4950]: 2024/04/19 14:27:25 [notice] 4950#4950: signal 1 (SIGHUP) received from 5189, reconfiguring
+2024-04-19T14:27:25.112345+0900 build01 nginx[4950]: 2024/04/19 14:27:25 [notice] 4950#4950: reconfiguring
+2024-04-19T14:27:30.089012+0900 build01 nginx[4950]: 2024/04/19 14:27:30 [notice] 4950#4950: using the "epoll" event method
+2024-04-19T14:27:30.112345+0900 build01 nginx[4950]: 2024/04/19 14:27:30 [notice] 4950#4950: start worker processes
+2024-04-19T14:27:30.134567+0900 build01 nginx[4950]: 2024/04/19 14:27:30 [notice] 4950#4950: start worker process 5207
+2024-04-19T14:28:00.001234+0900 build01 CRON[5245]: (root) CMD (/usr/sbin/logrotate /etc/logrotate.conf)
+2024-04-19T14:28:10.089012+0900 build01 chronyd[1089]: Selected source 10.0.0.2 (time.backup)
+2024-04-19T14:28:30.112345+0900 build01 systemd[1]: Started logrotate.service - Rotate log files.
+2024-04-19T14:28:30.134567+0900 build01 logrotate[5289]: ALERT exited abnormally with [1]
+2024-04-19T14:28:30.156789+0900 build01 systemd[1]: logrotate.service: Main process exited, code=exited, status=1/FAILURE
+2024-04-19T14:28:30.178901+0900 build01 systemd[1]: logrotate.service: Failed with result 'exit-code'.
+2024-04-19T14:28:30.189012+0900 build01 systemd[1]: Failed to start logrotate.service - Rotate log files.
+2024-04-19T14:28:35.089012+0900 build01 systemd[1]: logrotate.service: Scheduled restart job, restart counter is at 1.

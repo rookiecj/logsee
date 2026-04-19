@@ -1,0 +1,125 @@
+2024-04-19T09:12:00.001234+0000 node01 systemd[1]: Started session-3.scope - Session 3 of User root.
+2024-04-19T09:12:00.045678+0000 node01 sshd[4521]: Accepted publickey for root from 10.0.5.12 port 51234 ssh2
+2024-04-19T09:12:01.089012+0000 node01 systemd-logind[912]: New session 3 of user root.
+2024-04-19T09:12:10.001234+0000 node01 kernel: audit: type=1400 audit(1713517930.001:42): apparmor="STATUS" operation="profile_load"
+2024-04-19T09:12:15.089012+0000 node01 CRON[4534]: (root) CMD (/usr/local/bin/db-backup.sh)
+2024-04-19T09:12:30.001234+0000 node01 kvm[4589]: VCPU0 unhandled rdmsr: 0x64d
+2024-04-19T09:12:30.045678+0000 node01 kvm[4589]: VCPU0 unhandled rdmsr: 0x1a2
+2024-04-19T09:12:32.089012+0000 node01 kernel: Rebooted without UEFI PE persistent memory: can be unreliable
+2024-04-19T09:12:45.123456+0000 node01 chronyd[1034]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T09:13:00.001234+0000 node01 systemd[1]: Started logrotate.timer - Daily rotation of log files.
+2024-04-19T09:13:15.089012+0000 node01 dockerd[1145]: time="2024-04-19T09:13:15Z" level=info msg="container started" containerID=abc123
+2024-04-19T09:13:30.112345+0000 node01 kernel: nvme0n1: detected capacity change from 0 to 1953525168
+2024-04-19T09:13:45.123456+0000 node01 smartd[1198]: Device: /dev/nvme0n1, data checksum error
+2024-04-19T09:13:45.145678+0000 node01 smartd[1198]: Device: /dev/nvme0n1, previous self-test completed without error
+2024-04-19T09:14:00.189012+0000 node01 kernel: nvme nvme0: I/O 512 (READ) QID 1 timeout, aborting
+2024-04-19T09:14:00.212345+0000 node01 kernel: nvme nvme0: I/O 512 QID 1 timeout, reset controller
+2024-04-19T09:14:02.123456+0000 node01 kernel: nvme nvme0: Abort status: 0x7
+2024-04-19T09:14:02.145678+0000 node01 kernel: nvme nvme0: Device not ready; aborting reset, CSTS=0x1
+2024-04-19T09:14:02.167890+0000 node01 kernel: nvme nvme0: Removing after probe failure status: -19
+2024-04-19T09:14:02.189012+0000 node01 kernel: nvme0n1: Read-error on swap-device (259:0:12345)
+2024-04-19T09:14:02.212345+0000 node01 kernel: EXT4-fs (nvme0n1p3): I/O error while writing superblock
+2024-04-19T09:14:02.234567+0000 node01 kernel: EXT4-fs error (device nvme0n1p3): ext4_journal_check_start:83: Detected aborted journal
+2024-04-19T09:14:02.256789+0000 node01 kernel: EXT4-fs (nvme0n1p3): Remounting filesystem read-only
+2024-04-19T09:14:02.278901+0000 node01 kernel: BUG: kernel NULL pointer dereference, address: 0000000000000018
+2024-04-19T09:14:02.289012+0000 node01 kernel: #PF: supervisor read access in kernel mode
+2024-04-19T09:14:02.301234+0000 node01 kernel: #PF: error_code(0x0000) - not-present page
+2024-04-19T09:14:02.312345+0000 node01 kernel: PGD 0 P4D 0
+2024-04-19T09:14:02.323456+0000 node01 kernel: Oops: 0000 [#1] SMP NOPTI
+2024-04-19T09:14:02.334567+0000 node01 kernel: CPU: 3 PID: 4687 Comm: kworker/3:1 Tainted: G        W          6.5.0-26-generic #26-Ubuntu
+2024-04-19T09:14:02.345678+0000 node01 kernel: Hardware name: Dell Inc. PowerEdge R640, BIOS 2.12.1 05/19/2023
+2024-04-19T09:14:02.356789+0000 node01 kernel: Workqueue: events nvme_reset_work [nvme]
+2024-04-19T09:14:02.367890+0000 node01 kernel: RIP: 0010:nvme_timeout+0x1e1/0x3f0 [nvme]
+2024-04-19T09:14:02.378901+0000 node01 kernel: Code: 48 8b 05 20 80 00 00 48 85 c0 74 08 48 8b 78 18 e8 12 34 ff ff
+2024-04-19T09:14:02.389012+0000 node01 kernel: RSP: 0018:ffffc90001234e48 EFLAGS: 00010246
+2024-04-19T09:14:02.401234+0000 node01 kernel: RAX: 0000000000000000 RBX: ffff88810abcde00 RCX: 0000000000000000
+2024-04-19T09:14:02.412345+0000 node01 kernel: RDX: 0000000000000018 RSI: ffffffff826abcde RDI: ffff88810abcde00
+2024-04-19T09:14:02.423456+0000 node01 kernel: RBP: ffffc90001234e80 R08: 0000000000000000 R09: 0000000000000000
+2024-04-19T09:14:02.434567+0000 node01 kernel: R10: ffffffff82d01234 R11: 0000000000000000 R12: ffff88810abcde00
+2024-04-19T09:14:02.445678+0000 node01 kernel: R13: 0000000000000000 R14: ffff88810fe01234 R15: ffff88810abcde60
+2024-04-19T09:14:02.456789+0000 node01 kernel: FS:  0000000000000000(0000) GS:ffff888860e00000(0000) knlGS:0000000000000000
+2024-04-19T09:14:02.467890+0000 node01 kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+2024-04-19T09:14:02.478901+0000 node01 kernel: CR2: 0000000000000018 CR3: 0000000100410000 CR4: 0000000000750ee0
+2024-04-19T09:14:02.489012+0000 node01 kernel: Call Trace:
+2024-04-19T09:14:02.501234+0000 node01 kernel:  <TASK>
+2024-04-19T09:14:02.512345+0000 node01 kernel:  ? show_regs.part.0+0x20/0x30
+2024-04-19T09:14:02.523456+0000 node01 kernel:  ? __die+0x23/0x70
+2024-04-19T09:14:02.534567+0000 node01 kernel:  ? page_fault_oops+0x171/0x4e0
+2024-04-19T09:14:02.545678+0000 node01 kernel:  ? exc_page_fault+0x7f/0x180
+2024-04-19T09:14:02.556789+0000 node01 kernel:  ? asm_exc_page_fault+0x26/0x30
+2024-04-19T09:14:02.567890+0000 node01 kernel:  ? nvme_timeout+0x1e1/0x3f0 [nvme]
+2024-04-19T09:14:02.578901+0000 node01 kernel:  blk_mq_check_expired+0x5a/0x90
+2024-04-19T09:14:02.589012+0000 node01 kernel:  bt_iter+0x55/0x90
+2024-04-19T09:14:02.601234+0000 node01 kernel:  blk_mq_queue_tag_busy_iter+0x21b/0x420
+2024-04-19T09:14:02.612345+0000 node01 kernel:  blk_mq_timeout_work+0x88/0x100
+2024-04-19T09:14:02.623456+0000 node01 kernel:  process_one_work+0x22b/0x3d0
+2024-04-19T09:14:02.634567+0000 node01 kernel:  worker_thread+0x50/0x3e0
+2024-04-19T09:14:02.645678+0000 node01 kernel:  ? process_one_work+0x3d0/0x3d0
+2024-04-19T09:14:02.656789+0000 node01 kernel:  kthread+0xe8/0x120
+2024-04-19T09:14:02.667890+0000 node01 kernel:  ? kthread_complete_and_exit+0x20/0x20
+2024-04-19T09:14:02.678901+0000 node01 kernel:  ret_from_fork+0x22/0x30
+2024-04-19T09:14:02.689012+0000 node01 kernel:  </TASK>
+2024-04-19T09:14:02.701234+0000 node01 kernel: Modules linked in: nvme nvme_core nvme_common xhci_pci ixgbe intel_rapl_msr
+2024-04-19T09:14:02.712345+0000 node01 kernel: CR2: 0000000000000018
+2024-04-19T09:14:02.723456+0000 node01 kernel: ---[ end trace 0000000000000000 ]---
+2024-04-19T09:14:02.734567+0000 node01 kernel: RIP: 0010:nvme_timeout+0x1e1/0x3f0 [nvme]
+2024-04-19T09:14:02.745678+0000 node01 kernel: Code: 48 8b 05 20 80 00 00 48 85 c0 74 08 48 8b 78 18 e8 12 34 ff ff
+2024-04-19T09:14:02.756789+0000 node01 kernel: Kernel panic - not syncing: Fatal exception in interrupt
+2024-04-19T09:14:02.767890+0000 node01 kernel: Kernel Offset: 0x1a000000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
+2024-04-19T09:14:02.778901+0000 node01 kernel: ---[ end Kernel panic - not syncing: Fatal exception in interrupt ]---
+2024-04-19T09:14:30.045678+0000 node01 systemd[1]: Startup finished in 1.234s (kernel) + 15.678s (userspace) = 16.912s.
+2024-04-19T09:14:31.012345+0000 node01 systemd[1]: Reached target graphical.target - Graphical Interface.
+2024-04-19T09:14:31.056789+0000 node01 kernel: audit: type=1130 audit(1713517971.056:78): pid=1 uid=0 auid=4294967295 ses=4294967295 msg='unit=systemd-logind comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+2024-04-19T09:14:35.089012+0000 node01 systemd-logind[912]: Watching system buttons on /dev/input/event0 (Power Button)
+2024-04-19T09:14:40.112345+0000 node01 sshd[1178]: Server listening on 0.0.0.0 port 22.
+2024-04-19T09:14:40.134567+0000 node01 sshd[1178]: Server listening on :: port 22.
+2024-04-19T09:14:41.001234+0000 node01 chronyd[1034]: chronyd version 4.3 starting
+2024-04-19T09:14:42.045678+0000 node01 systemd[1]: Started chrony.service - chrony, an NTP client/server.
+2024-04-19T09:14:45.089012+0000 node01 dockerd[1245]: time="2024-04-19T09:14:45Z" level=info msg="Loading containers: start."
+2024-04-19T09:14:50.112345+0000 node01 dockerd[1245]: time="2024-04-19T09:14:50Z" level=info msg="Loading containers: done."
+2024-04-19T09:14:52.001234+0000 node01 dockerd[1245]: time="2024-04-19T09:14:52Z" level=info msg="Daemon has completed initialization"
+2024-04-19T09:14:55.134567+0000 node01 systemd[1]: Started docker.service - Docker Application Container Engine.
+2024-04-19T09:15:00.001234+0000 node01 CRON[1334]: (root) CMD (/usr/local/bin/health-check.sh)
+2024-04-19T09:15:05.089012+0000 node01 health-check[1334]: disk=/dev/nvme0n1 status=OFFLINE retry=1
+2024-04-19T09:15:05.112345+0000 node01 health-check[1334]: disk=/dev/nvme0n1 status=OFFLINE retry=2
+2024-04-19T09:15:05.134567+0000 node01 health-check[1334]: disk=/dev/nvme0n1 status=OFFLINE retry=3
+2024-04-19T09:15:05.156789+0000 node01 health-check[1334]: ALERT: nvme0n1 offline after 3 retries
+2024-04-19T09:15:10.089012+0000 node01 pagerduty-alert[1345]: incident created: PD-NVME1-20240419 severity=critical
+2024-04-19T09:15:20.112345+0000 node01 sshd[1402]: Accepted publickey for ops from 10.0.5.18 port 51245 ssh2
+2024-04-19T09:15:20.134567+0000 node01 systemd-logind[912]: New session 4 of user ops.
+2024-04-19T09:15:25.089012+0000 node01 sudo[1423]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/dmesg
+2024-04-19T09:15:25.112345+0000 node01 sudo[1423]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T09:15:30.089012+0000 node01 sudo[1423]: pam_unix(sudo:session): session closed for user root
+2024-04-19T09:15:35.112345+0000 node01 sudo[1445]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/smartctl -a /dev/nvme0n1
+2024-04-19T09:15:35.134567+0000 node01 sudo[1445]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T09:15:40.089012+0000 node01 sudo[1445]: pam_unix(sudo:session): session closed for user root
+2024-04-19T09:15:45.001234+0000 node01 sudo[1467]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/journalctl -b -1 -p err
+2024-04-19T09:15:45.023456+0000 node01 sudo[1467]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T09:15:50.089012+0000 node01 sudo[1467]: pam_unix(sudo:session): session closed for user root
+2024-04-19T09:16:00.001234+0000 node01 CRON[1489]: (root) CMD (/usr/local/bin/health-check.sh)
+2024-04-19T09:16:05.089012+0000 node01 health-check[1489]: WARN: nvme0n1 still offline, fallback to degraded mode
+2024-04-19T09:16:10.112345+0000 node01 dockerd[1245]: time="2024-04-19T09:16:10Z" level=warning msg="health check: OCI runtime error: container healthcheck failed"
+2024-04-19T09:16:30.089012+0000 node01 systemd[1]: Started dpkg-db-backup.service - Daily dpkg database backup service.
+2024-04-19T09:16:35.112345+0000 node01 systemd[1]: dpkg-db-backup.service: Deactivated successfully.
+2024-04-19T09:16:45.089012+0000 node01 chronyd[1034]: Forward time jump detected!
+2024-04-19T09:16:45.112345+0000 node01 chronyd[1034]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T09:17:00.001234+0000 node01 CRON[1534]: (root) CMD (/usr/local/bin/health-check.sh)
+2024-04-19T09:17:05.089012+0000 node01 health-check[1534]: WARN: nvme0n1 still offline, fallback to degraded mode
+2024-04-19T09:17:10.112345+0000 node01 systemd[1]: Started man-db.service - Daily man-db regeneration.
+2024-04-19T09:17:15.089012+0000 node01 systemd[1]: man-db.service: Deactivated successfully.
+2024-04-19T09:17:15.112345+0000 node01 systemd[1]: Finished man-db.service - Daily man-db regeneration.
+2024-04-19T09:17:20.089012+0000 node01 dockerd[1245]: time="2024-04-19T09:17:20Z" level=info msg="ignoring event type=attach container=abc123"
+2024-04-19T09:17:30.112345+0000 node01 ops[1556]: sudo systemctl restart docker.service
+2024-04-19T09:17:30.134567+0000 node01 sudo[1556]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/systemctl restart docker.service
+2024-04-19T09:17:30.156789+0000 node01 systemd[1]: Stopping docker.service - Docker Application Container Engine...
+2024-04-19T09:17:32.089012+0000 node01 systemd[1]: docker.service: Deactivated successfully.
+2024-04-19T09:17:32.112345+0000 node01 systemd[1]: Stopped docker.service - Docker Application Container Engine.
+2024-04-19T09:17:33.089012+0000 node01 systemd[1]: Starting docker.service - Docker Application Container Engine...
+2024-04-19T09:17:35.112345+0000 node01 dockerd[1612]: time="2024-04-19T09:17:35Z" level=info msg="Starting up"
+2024-04-19T09:17:37.089012+0000 node01 dockerd[1612]: time="2024-04-19T09:17:37Z" level=info msg="Daemon has completed initialization"
+2024-04-19T09:17:38.112345+0000 node01 systemd[1]: Started docker.service - Docker Application Container Engine.
+2024-04-19T09:17:45.089012+0000 node01 sudo[1556]: pam_unix(sudo:session): session closed for user root
+2024-04-19T09:17:50.123456+0000 node01 sshd[1402]: Received disconnect from 10.0.5.18 port 51245:11: disconnected by user
+2024-04-19T09:17:50.145678+0000 node01 sshd[1402]: Disconnected from user ops 10.0.5.18 port 51245
+2024-04-19T09:17:50.167890+0000 node01 systemd-logind[912]: Session 4 logged out. Waiting for processes to exit.
+2024-04-19T09:17:50.189012+0000 node01 systemd-logind[912]: Removed session 4.

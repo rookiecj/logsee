@@ -1,0 +1,101 @@
+2024-04-19T03:00:00.001234+0000 api-03 CRON[2145]: (root) CMD (/usr/local/bin/report-stats.sh)
+2024-04-19T03:00:05.089012+0000 api-03 systemd[1]: Starting logrotate.service - Rotate log files...
+2024-04-19T03:00:05.112345+0000 api-03 systemd[1]: logrotate.service: Deactivated successfully.
+2024-04-19T03:00:15.134567+0000 api-03 chronyd[1034]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T03:01:00.001234+0000 api-03 systemd[1]: Started session-12.scope - Session 12 of User ops.
+2024-04-19T03:01:02.089012+0000 api-03 sshd[2201]: Accepted publickey for ops from 10.0.3.21 port 51023 ssh2
+2024-04-19T03:01:05.112345+0000 api-03 systemd-logind[912]: New session 12 of user ops.
+2024-04-19T03:01:30.001234+0000 api-03 api-server[1789]: method=GET path=/v1/status code=200 duration=12ms
+2024-04-19T03:01:45.089012+0000 api-03 api-server[1789]: method=POST path=/v1/items code=201 duration=45ms
+2024-04-19T03:02:00.001234+0000 api-03 CRON[2301]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:02:15.089012+0000 api-03 api-server[1789]: method=GET path=/v1/items code=200 duration=23ms
+2024-04-19T03:03:00.001234+0000 api-03 api-server[1789]: method=POST path=/v1/process code=200 duration=145ms
+2024-04-19T03:03:10.045678+0000 api-03 api-server[1789]: method=GET path=/v1/download code=200 duration=89ms
+2024-04-19T03:03:22.123456+0000 api-03 api-server[1789]: method=POST path=/v1/transform code=500 duration=234ms
+2024-04-19T03:03:22.145678+0000 api-03 api-server[1789]: panic: runtime error: index out of range [12] with length 8
+2024-04-19T03:03:22.167890+0000 api-03 api-server[1789]: goroutine 42 [running]:
+2024-04-19T03:03:22.189012+0000 api-03 api-server[1789]: main.(*Transformer).Process(...)
+2024-04-19T03:03:22.201234+0000 api-03 api-server[1789]: 	/build/api-server/transformer.go:89
+2024-04-19T03:03:22.212345+0000 api-03 api-server[1789]: main.(*Handler).ServeHTTP(0xc000123400, ...)
+2024-04-19T03:03:22.223456+0000 api-03 api-server[1789]: 	/build/api-server/http.go:145
+2024-04-19T03:03:22.234567+0000 api-03 api-server[1789]: [signal SIGABRT: abort]
+2024-04-19T03:03:22.245678+0000 api-03 kernel: api-server[1789]: segfault at 18 ip 00005632a8b5c1e1 sp 00007ffc1234abcd error 4 in api-server[5632a8a00000+b00000]
+2024-04-19T03:03:22.256789+0000 api-03 kernel: Code: 48 8b 05 20 80 00 00 48 85 c0 74 08 48 8b 78 18 e8 12 34 ff ff
+2024-04-19T03:03:22.267890+0000 api-03 systemd[1]: api-server.service: Main process exited, code=dumped, status=11/SEGV
+2024-04-19T03:03:22.278901+0000 api-03 systemd-coredump[2345]: [🡕] Process 1789 (api-server) of user 1002 dumped core.
+2024-04-19T03:03:22.289012+0000 api-03 systemd-coredump[2345]: Stack trace of thread 1789:
+2024-04-19T03:03:22.301234+0000 api-03 systemd-coredump[2345]: #0  0x00005632a8b5c1e1 runtime.sigpanic (api-server + 0x15c1e1)
+2024-04-19T03:03:22.312345+0000 api-03 systemd-coredump[2345]: #1  0x00005632a8b6a023 main.(*Transformer).Process.func1 (api-server + 0x16a023)
+2024-04-19T03:03:22.323456+0000 api-03 systemd-coredump[2345]: #2  0x00005632a8b6a145 main.(*Transformer).Process (api-server + 0x16a145)
+2024-04-19T03:03:22.334567+0000 api-03 systemd-coredump[2345]: #3  0x00005632a8b71a89 main.(*Handler).ServeHTTP (api-server + 0x171a89)
+2024-04-19T03:03:22.345678+0000 api-03 systemd-coredump[2345]: #4  0x00005632a8a23456 net/http.HandlerFunc.ServeHTTP (api-server + 0x23456)
+2024-04-19T03:03:22.356789+0000 api-03 systemd-coredump[2345]: #5  0x00005632a8a3abcd net/http.serverHandler.ServeHTTP (api-server + 0x3abcd)
+2024-04-19T03:03:22.367890+0000 api-03 systemd-coredump[2345]: #6  0x00005632a8a45678 net/http.(*conn).serve (api-server + 0x45678)
+2024-04-19T03:03:22.378901+0000 api-03 systemd-coredump[2345]: #7  0x00005632a8001234 runtime.goexit (api-server + 0x1234)
+2024-04-19T03:03:22.389012+0000 api-03 systemd-coredump[2345]: Coredump diverted to /var/lib/systemd/coredump/core.api-server.1002.abc123.1789.1713520602000000.zst
+2024-04-19T03:03:22.401234+0000 api-03 systemd-coredump[2345]: Module /lib/x86_64-linux-gnu/libc.so.6 from deb package libc6-2.39-0ubuntu1
+2024-04-19T03:03:22.412345+0000 api-03 systemd-coredump[2345]: Module /usr/bin/api-server without build-id.
+2024-04-19T03:03:22.423456+0000 api-03 systemd-coredump[2345]: ProcessName: api-server
+2024-04-19T03:03:22.434567+0000 api-03 systemd-coredump[2345]: CoreFile: /var/lib/systemd/coredump/core.api-server.1002.abc123.1789.1713520602000000.zst
+2024-04-19T03:03:22.445678+0000 api-03 systemd[1]: api-server.service: Failed with result 'core-dump'.
+2024-04-19T03:03:22.456789+0000 api-03 systemd[1]: api-server.service: Consumed 5min 12.345s CPU time, 412.5M memory peak.
+2024-04-19T03:03:22.467890+0000 api-03 systemd[1]: api-server.service: Scheduled restart job, restart counter is at 1.
+2024-04-19T03:03:22.478901+0000 api-03 systemd[1]: Stopped api-server.service - REST API server.
+2024-04-19T03:03:23.001234+0000 api-03 systemd[1]: Starting api-server.service - REST API server...
+2024-04-19T03:03:23.089012+0000 api-03 api-server[2389]: starting up version=v2.4.1 build=abc123
+2024-04-19T03:03:23.112345+0000 api-03 api-server[2389]: listening on :8080
+2024-04-19T03:03:23.134567+0000 api-03 systemd[1]: Started api-server.service - REST API server.
+2024-04-19T03:03:30.089012+0000 api-03 api-server[2389]: method=GET path=/v1/status code=200 duration=11ms
+2024-04-19T03:03:35.112345+0000 api-03 pagerduty-alert[2412]: incident created: PD-CORE-20240419-0303 severity=high component=api-server
+2024-04-19T03:04:00.001234+0000 api-03 CRON[2434]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:04:15.089012+0000 api-03 api-server[2389]: method=POST path=/v1/items code=201 duration=48ms
+2024-04-19T03:04:30.112345+0000 api-03 ops[2456]: investigate coredump: ls -la /var/lib/systemd/coredump/
+2024-04-19T03:04:30.134567+0000 api-03 sudo[2456]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/ls -la /var/lib/systemd/coredump/
+2024-04-19T03:04:30.156789+0000 api-03 sudo[2456]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T03:04:35.089012+0000 api-03 sudo[2456]: pam_unix(sudo:session): session closed for user root
+2024-04-19T03:04:45.089012+0000 api-03 sudo[2478]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/bin/coredumpctl info 1789
+2024-04-19T03:04:45.112345+0000 api-03 sudo[2478]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T03:04:50.089012+0000 api-03 sudo[2478]: pam_unix(sudo:session): session closed for user root
+2024-04-19T03:05:00.001234+0000 api-03 CRON[2501]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:05:15.089012+0000 api-03 api-server[2389]: method=POST path=/v1/transform code=500 duration=245ms
+2024-04-19T03:05:15.112345+0000 api-03 api-server[2389]: error: transformer: input length mismatch (got 12, want 8)
+2024-04-19T03:05:30.112345+0000 api-03 ops[2534]: deploy hotfix v2.4.2
+2024-04-19T03:05:30.134567+0000 api-03 sudo[2534]: ops : TTY=pts/0 ; USER=root ; COMMAND=/usr/local/bin/deploy.sh api-server v2.4.2
+2024-04-19T03:05:30.156789+0000 api-03 sudo[2534]: pam_unix(sudo:session): session opened for user root(uid=0) by ops(uid=1000)
+2024-04-19T03:05:35.089012+0000 api-03 deploy[2545]: pulling api-server:v2.4.2
+2024-04-19T03:05:45.112345+0000 api-03 deploy[2545]: image pulled successfully (sha256:def456)
+2024-04-19T03:05:50.089012+0000 api-03 deploy[2545]: stopping current api-server.service
+2024-04-19T03:05:50.112345+0000 api-03 systemd[1]: Stopping api-server.service - REST API server...
+2024-04-19T03:05:52.089012+0000 api-03 systemd[1]: api-server.service: Deactivated successfully.
+2024-04-19T03:05:52.112345+0000 api-03 systemd[1]: Stopped api-server.service - REST API server.
+2024-04-19T03:05:53.089012+0000 api-03 deploy[2545]: starting api-server.service (v2.4.2)
+2024-04-19T03:05:53.112345+0000 api-03 systemd[1]: Starting api-server.service - REST API server...
+2024-04-19T03:05:53.134567+0000 api-03 api-server[2589]: starting up version=v2.4.2 build=def456
+2024-04-19T03:05:53.156789+0000 api-03 api-server[2589]: listening on :8080
+2024-04-19T03:05:53.178901+0000 api-03 systemd[1]: Started api-server.service - REST API server.
+2024-04-19T03:05:55.089012+0000 api-03 deploy[2545]: verification: probe /v1/status -> 200 OK
+2024-04-19T03:05:55.112345+0000 api-03 sudo[2534]: pam_unix(sudo:session): session closed for user root
+2024-04-19T03:06:00.001234+0000 api-03 CRON[2612]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:06:15.089012+0000 api-03 api-server[2589]: method=POST path=/v1/transform code=200 duration=112ms
+2024-04-19T03:06:30.112345+0000 api-03 pagerduty-alert[2412]: incident resolved: PD-CORE-20240419-0303
+2024-04-19T03:06:45.089012+0000 api-03 api-server[2589]: method=GET path=/v1/items code=200 duration=14ms
+2024-04-19T03:07:00.001234+0000 api-03 CRON[2645]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:07:15.089012+0000 api-03 api-server[2589]: method=POST path=/v1/items code=201 duration=52ms
+2024-04-19T03:07:30.112345+0000 api-03 systemd-logind[912]: Session 12 logged out.
+2024-04-19T03:07:30.134567+0000 api-03 systemd-logind[912]: Removed session 12.
+2024-04-19T03:08:00.001234+0000 api-03 CRON[2701]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:08:15.089012+0000 api-03 api-server[2589]: method=GET path=/v1/status code=200 duration=9ms
+2024-04-19T03:08:30.089012+0000 api-03 chronyd[1034]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T03:09:00.001234+0000 api-03 CRON[2734]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:09:15.089012+0000 api-03 api-server[2589]: method=POST path=/v1/transform code=200 duration=98ms
+2024-04-19T03:09:30.112345+0000 api-03 api-server[2589]: method=GET path=/v1/items code=200 duration=17ms
+2024-04-19T03:10:00.001234+0000 api-03 CRON[2789]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:10:15.089012+0000 api-03 api-server[2589]: method=POST path=/v1/process code=200 duration=134ms
+2024-04-19T03:10:30.089012+0000 api-03 systemd[1]: Started man-db.service - Daily man-db regeneration.
+2024-04-19T03:10:35.112345+0000 api-03 systemd[1]: man-db.service: Deactivated successfully.
+2024-04-19T03:11:00.001234+0000 api-03 CRON[2823]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:11:15.089012+0000 api-03 api-server[2589]: method=POST path=/v1/items code=201 duration=41ms
+2024-04-19T03:11:30.112345+0000 api-03 api-server[2589]: method=GET path=/v1/status code=200 duration=7ms
+2024-04-19T03:12:00.001234+0000 api-03 CRON[2867]: (root) CMD (/usr/local/bin/metric-push.sh)
+2024-04-19T03:12:15.089012+0000 api-03 chronyd[1034]: Selected source 10.0.0.1 (time.internal)
+2024-04-19T03:12:30.112345+0000 api-03 api-server[2589]: method=POST path=/v1/transform code=200 duration=101ms
