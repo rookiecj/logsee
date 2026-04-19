@@ -357,7 +357,8 @@ later chore commit)에서 복구 가능.
 
 - **Drain 포팅 타이밍**: 본 계획은 out-of-scope로 두었음. v1 끝난 뒤 별도 plan 문서로.
 - **adb 직접 소스**: 현재는 파일/파이프만. adb 재접속 로직이 필요하므로 별도 Phase.
-- **영속화 포맷**: JSONL 우선. bbolt 필요성은 Phase 8 실사용 후 판단.
+- **영속화 포맷**: JSONL 우선. bbolt 필요성은 실사용 후 판단.
+- **journalctl (systemd journal) 지원**: 별도 계획 → [`docs/plans/journalctl-support-plan.md`](journalctl-support-plan.md).
 
 ## 관련 문서
 
