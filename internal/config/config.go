@@ -117,14 +117,16 @@ func defaultLogTypeTOML() string {
 	fmt.Fprintf(&b, "probe_lines = %d  # auto 프로브 시 상단에서 읽는 줄 수\n", lt.ProbeLines)
 	b.WriteString("\n")
 	b.WriteString("# --- [log_type.patterns] 형식 판별·레벨 추출용 정규식 ---\n")
-	b.WriteString("# bracket_head     — [..] … Name: 에서 Name(첫 캡처) — 레벨/태그 후보\n")
-	b.WriteString("# adb_head_time    — 날짜+시간 형 Android 헤더의 레벨 한 글자(V/D/I/W/E/F)\n")
+	b.WriteString("# bracket_head        — [..] … Name: 에서 Name(첫 캡처) — 레벨/태그 후보\n")
+	b.WriteString("# adb_head_time       — 날짜+시간 형 Android 헤더의 레벨 한 글자(V/D/I/W/E/F)\n")
 	b.WriteString("# adb_head_threadtime — MM-dd 시간 형 threadtime 헤더의 레벨 한 글자\n")
+	b.WriteString("# journal_head        — journalctl -o short-iso(-precise) 헤더 (host svc[pid]:)\n")
 	b.WriteString("#\n")
 	b.WriteString("[log_type.patterns]\n")
 	fmt.Fprintf(&b, "bracket_head = %q\n", p.BracketHead)
 	fmt.Fprintf(&b, "adb_head_time = %q\n", p.AndroidHeadTime)
 	fmt.Fprintf(&b, "adb_head_threadtime = %q\n", p.AndroidHeadThreadtime)
+	fmt.Fprintf(&b, "journal_head = %q\n", p.JournalHead)
 	return b.String()
 }
 
@@ -218,6 +220,9 @@ func merge(dst *Config, src Config) {
 	}
 	if src.LogType.Patterns.AndroidHeadThreadtime != "" {
 		dst.LogType.Patterns.AndroidHeadThreadtime = src.LogType.Patterns.AndroidHeadThreadtime
+	}
+	if src.LogType.Patterns.JournalHead != "" {
+		dst.LogType.Patterns.JournalHead = src.LogType.Patterns.JournalHead
 	}
 	if strings.TrimSpace(src.History.Dir) != "" {
 		dst.History.Dir = strings.TrimSpace(src.History.Dir)

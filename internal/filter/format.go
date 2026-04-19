@@ -18,6 +18,11 @@ const (
 	FormatAndroid
 	// FormatPlain: no structured level extraction for reserved tag "level" (ExtractRawLevel always fails).
 	FormatPlain
+	// FormatSystemdJournal: `journalctl -o short-iso` / `short-iso-precise`
+	// — "2024-04-19T14:24:10(.123456)?(+0900|Z) host tag[pid]: msg".
+	// Level extraction is not supported for this format (short-iso has no
+	// PRIORITY field); ExtractRawLevel returns ok=false.
+	FormatSystemdJournal
 )
 
 const formatProbeLines = 32
@@ -27,6 +32,7 @@ type PatternConfig struct {
 	BracketHead           string `toml:"bracket_head" json:"bracket_head"`
 	AndroidHeadTime       string `toml:"adb_head_time" json:"adb_head_time"`
 	AndroidHeadThreadtime string `toml:"adb_head_threadtime" json:"adb_head_threadtime"`
+	JournalHead           string `toml:"journal_head" json:"journal_head"`
 }
 
 // DefaultPatternConfig returns built-in patterns used when no config is provided.
@@ -35,6 +41,7 @@ func DefaultPatternConfig() PatternConfig {
 		BracketHead:           `^\[[^\]]+\]\s+([A-Za-z][A-Za-z0-9_]*)\s*:`,
 		AndroidHeadTime:       `^\d{4}-\d{2}-\d{2}\s+\d{1,2}:\d{2}:\d{2}\.\d{3}\s+\d+-\d+\s+\S+\s+\S+\s+([VDIWEF])\s`,
 		AndroidHeadThreadtime: `^\d{2}-\d{2}\s+\d{1,2}:\d{2}:\d{2}\.\d{3}\s+\d+\s+\d+\s+([VDIWEF])\s+\S+:`,
+		JournalHead:           `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{4}|Z)\s+\S+\s+[^\s\[]+(?:\[\d+\])?:`,
 	}
 }
 
@@ -42,6 +49,7 @@ type compiledPatterns struct {
 	bracketHead           *regexp.Regexp
 	androidHeadTime       *regexp.Regexp
 	androidHeadThreadtime *regexp.Regexp
+	journalHead           *regexp.Regexp
 }
 
 var activePatterns = mustCompilePatterns(DefaultPatternConfig())
@@ -76,10 +84,21 @@ func compilePatterns(cfg PatternConfig) (compiledPatterns, error) {
 	if err != nil {
 		return compiledPatterns{}, fmt.Errorf("compile adb_head_threadtime: %w", err)
 	}
+	journalPattern := cfg.JournalHead
+	if strings.TrimSpace(journalPattern) == "" {
+		// Journal support is additive; keep the field optional so
+		// existing configs without the key continue to compile.
+		journalPattern = DefaultPatternConfig().JournalHead
+	}
+	journalHead, err := regexp.Compile(journalPattern)
+	if err != nil {
+		return compiledPatterns{}, fmt.Errorf("compile journal_head: %w", err)
+	}
 	return compiledPatterns{
 		bracketHead:           bracketHead,
 		androidHeadTime:       androidHeadTime,
 		androidHeadThreadtime: androidHeadThreadtime,
+		journalHead:           journalHead,
 	}, nil
 }
 
@@ -112,7 +131,7 @@ func DetectLogFormatN(sampleLines []string, maxNonEmpty int) LogFormat {
 	if maxNonEmpty < 1 {
 		maxNonEmpty = formatProbeLines
 	}
-	var a, b int
+	var a, b, j int
 	n := 0
 	for _, line := range sampleLines {
 		if n >= maxNonEmpty {
@@ -126,17 +145,40 @@ func DetectLogFormatN(sampleLines []string, maxNonEmpty int) LogFormat {
 		if matchAndroidHead(s, activePatterns) {
 			a++
 		}
+		if activePatterns.journalHead.MatchString(s) {
+			j++
+		}
 		if activePatterns.bracketHead.MatchString(s) {
 			b++
 		}
 	}
-	if a > b {
-		return FormatAndroid
+	// Pick the highest-scoring format; ties return Unknown so callers can
+	// apply their own tie-break (e.g. EffectiveFormatFromDetect).
+	best := FormatUnknown
+	bestScore := 0
+	if a > bestScore {
+		best, bestScore = FormatAndroid, a
 	}
-	if b > a {
-		return FormatBracket
+	if j > bestScore {
+		best, bestScore = FormatSystemdJournal, j
 	}
-	return FormatUnknown
+	if b > bestScore {
+		best, bestScore = FormatBracket, b
+	}
+	// Tie detection: any other format equal to bestScore and >0 means
+	// ambiguous — fall back to Unknown.
+	if bestScore > 0 {
+		ties := 0
+		for _, s := range [...]int{a, j, b} {
+			if s == bestScore {
+				ties++
+			}
+		}
+		if ties > 1 {
+			return FormatUnknown
+		}
+	}
+	return best
 }
 
 func matchAndroidHead(line string, p compiledPatterns) bool {
@@ -155,6 +197,9 @@ func extractAndroidLevel(line string, p compiledPatterns) (string, bool) {
 
 // EffectiveFormatFromDetect maps detection result to a concrete format for filtering.
 // A tie or no match (FormatUnknown) becomes FormatPlain — no structural level patterns.
+// Bracket also collapses to Plain (no level-extraction rule is shipped for it by default).
+// FormatSystemdJournal maps through unchanged; callers that want to fall back
+// do it explicitly.
 func EffectiveFormatFromDetect(d LogFormat) LogFormat {
 	if d == FormatUnknown || d == FormatBracket {
 		return FormatPlain

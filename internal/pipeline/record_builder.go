@@ -48,19 +48,19 @@ func (b RecordBuilder) Build(line domain.Line, format domain.LineFormat) domain.
 		Format:    format,
 		SchemaVer: domain.SchemaVersion,
 	}
-	if format != domain.LineFormatAndroid {
-		return r
+	switch format {
+	case domain.LineFormatAndroid:
+		if m := adbThreadtimeRE.FindStringSubmatch(line.Text); m != nil {
+			r.Time = b.parseTime(m[1], m[2])
+			r.PID = parseInt32(m[3])
+			r.TID = parseInt32(m[4])
+			r.Level = domain.LevelFromRaw(m[5])
+			r.Tag = strings.TrimSpace(m[6])
+			r.Message = m[7]
+		}
+	case domain.LineFormatJournal:
+		return buildJournalRecord(line)
 	}
-	m := adbThreadtimeRE.FindStringSubmatch(line.Text)
-	if m == nil {
-		return r
-	}
-	r.Time = b.parseTime(m[1], m[2])
-	r.PID = parseInt32(m[3])
-	r.TID = parseInt32(m[4])
-	r.Level = domain.LevelFromRaw(m[5])
-	r.Tag = strings.TrimSpace(m[6])
-	r.Message = m[7]
 	return r
 }
 

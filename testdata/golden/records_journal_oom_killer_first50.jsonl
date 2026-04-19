@@ -1,0 +1,50 @@
+{"seq":1,"time":"2024-04-19T02:00:01.234567Z","level":"?","pid":4512,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/report-stats.sh)","fmt":"journal","schema_version":1}
+{"seq":2,"time":"2024-04-19T02:00:05.089012Z","level":"?","pid":1,"tag":"systemd","msg":"Starting logrotate.service - Rotate log files...","fmt":"journal","schema_version":1}
+{"seq":3,"time":"2024-04-19T02:00:05.112345Z","level":"?","pid":1,"tag":"systemd","msg":"logrotate.service: Deactivated successfully.","fmt":"journal","schema_version":1}
+{"seq":4,"time":"2024-04-19T02:00:05.134567Z","level":"?","pid":1,"tag":"systemd","msg":"Finished logrotate.service - Rotate log files.","fmt":"journal","schema_version":1}
+{"seq":5,"time":"2024-04-19T02:01:00.001234Z","level":"?","pid":4534,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/queue-worker.sh --batch)","fmt":"journal","schema_version":1}
+{"seq":6,"time":"2024-04-19T02:01:15.089012Z","level":"?","pid":4546,"tag":"queue-worker","msg":"started batch job-queue, concurrency=32","fmt":"journal","schema_version":1}
+{"seq":7,"time":"2024-04-19T02:01:30.112345Z","level":"?","pid":4546,"tag":"queue-worker","msg":"processed 1200 messages in 15s","fmt":"journal","schema_version":1}
+{"seq":8,"time":"2024-04-19T02:02:00.001234Z","level":"?","pid":4589,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/metric-push.sh)","fmt":"journal","schema_version":1}
+{"seq":9,"time":"2024-04-19T02:02:05.089012Z","level":"?","pid":4601,"tag":"metric-push","msg":"pushed 42 metrics to collector","fmt":"journal","schema_version":1}
+{"seq":10,"time":"2024-04-19T02:03:00.001234Z","level":"?","pid":4634,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/queue-worker.sh --batch)","fmt":"journal","schema_version":1}
+{"seq":11,"time":"2024-04-19T02:03:02.089012Z","level":"?","pid":4646,"tag":"queue-worker","msg":"started batch job-queue, concurrency=32","fmt":"journal","schema_version":1}
+{"seq":12,"time":"2024-04-19T02:03:30.112345Z","level":"?","pid":4646,"tag":"queue-worker","msg":"processed 4800 messages in 28s","fmt":"journal","schema_version":1}
+{"seq":13,"time":"2024-04-19T02:04:00.001234Z","level":"?","pid":4689,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/metric-push.sh)","fmt":"journal","schema_version":1}
+{"seq":14,"time":"2024-04-19T02:04:05.089012Z","level":"?","pid":4701,"tag":"metric-push","msg":"pushed 42 metrics to collector","fmt":"journal","schema_version":1}
+{"seq":15,"time":"2024-04-19T02:05:00.001234Z","level":"?","pid":4734,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/queue-worker.sh --batch)","fmt":"journal","schema_version":1}
+{"seq":16,"time":"2024-04-19T02:05:02.089012Z","level":"?","pid":4746,"tag":"queue-worker","msg":"started batch job-queue, concurrency=32","fmt":"journal","schema_version":1}
+{"seq":17,"time":"2024-04-19T02:05:15.112345Z","level":"?","tag":"kernel","msg":"queue-worker invoked oom-killer: gfp_mask=0x100cca(GFP_HIGHUSER_MOVABLE), order=0, oom_score_adj=0","fmt":"journal","schema_version":1}
+{"seq":18,"time":"2024-04-19T02:05:15.123456Z","level":"?","tag":"kernel","msg":"CPU: 2 PID: 4746 Comm: queue-worker Tainted: G            E     6.5.0-26-generic #26-Ubuntu","fmt":"journal","schema_version":1}
+{"seq":19,"time":"2024-04-19T02:05:15.134567Z","level":"?","tag":"kernel","msg":"Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS Google 10/27/2023","fmt":"journal","schema_version":1}
+{"seq":20,"time":"2024-04-19T02:05:15.145678Z","level":"?","tag":"kernel","msg":"Call Trace:","fmt":"journal","schema_version":1}
+{"seq":21,"time":"2024-04-19T02:05:15.156789Z","level":"?","tag":"kernel","msg":" \u003cTASK\u003e","fmt":"journal","schema_version":1}
+{"seq":22,"time":"2024-04-19T02:05:15.16789Z","level":"?","tag":"kernel","msg":" dump_stack_lvl+0x48/0x70","fmt":"journal","schema_version":1}
+{"seq":23,"time":"2024-04-19T02:05:15.178901Z","level":"?","tag":"kernel","msg":" dump_stack+0x10/0x20","fmt":"journal","schema_version":1}
+{"seq":24,"time":"2024-04-19T02:05:15.189012Z","level":"?","tag":"kernel","msg":" dump_header+0x47/0x1f0","fmt":"journal","schema_version":1}
+{"seq":25,"time":"2024-04-19T02:05:15.201234Z","level":"?","tag":"kernel","msg":" oom_kill_process+0x104/0x2a0","fmt":"journal","schema_version":1}
+{"seq":26,"time":"2024-04-19T02:05:15.212345Z","level":"?","tag":"kernel","msg":" out_of_memory+0x26e/0x550","fmt":"journal","schema_version":1}
+{"seq":27,"time":"2024-04-19T02:05:15.223456Z","level":"?","tag":"kernel","msg":" __alloc_pages_slowpath+0x966/0xc70","fmt":"journal","schema_version":1}
+{"seq":28,"time":"2024-04-19T02:05:15.234567Z","level":"?","tag":"kernel","msg":" __alloc_pages+0x334/0x360","fmt":"journal","schema_version":1}
+{"seq":29,"time":"2024-04-19T02:05:15.245678Z","level":"?","tag":"kernel","msg":" alloc_pages+0x91/0x180","fmt":"journal","schema_version":1}
+{"seq":30,"time":"2024-04-19T02:05:15.256789Z","level":"?","tag":"kernel","msg":" folio_alloc+0x1e/0x60","fmt":"journal","schema_version":1}
+{"seq":31,"time":"2024-04-19T02:05:15.26789Z","level":"?","tag":"kernel","msg":" shmem_alloc_folio+0xa2/0x120","fmt":"journal","schema_version":1}
+{"seq":32,"time":"2024-04-19T02:05:15.278901Z","level":"?","tag":"kernel","msg":" \u003c/TASK\u003e","fmt":"journal","schema_version":1}
+{"seq":33,"time":"2024-04-19T02:05:15.289012Z","level":"?","tag":"kernel","msg":"Mem-Info:","fmt":"journal","schema_version":1}
+{"seq":34,"time":"2024-04-19T02:05:15.301234Z","level":"?","tag":"kernel","msg":"active_anon:1820412 inactive_anon:423891 isolated_anon:0 active_file:824 inactive_file:234 isolated_file:0","fmt":"journal","schema_version":1}
+{"seq":35,"time":"2024-04-19T02:05:15.312345Z","level":"?","tag":"kernel","msg":"Node 0 active_anon:7281648kB inactive_anon:1695564kB active_file:3296kB inactive_file:936kB","fmt":"journal","schema_version":1}
+{"seq":36,"time":"2024-04-19T02:05:15.323456Z","level":"?","tag":"kernel","msg":"Node 0 DMA free:11240kB boost:0kB min:44kB low:56kB high:68kB reserved_highatomic:0KB","fmt":"journal","schema_version":1}
+{"seq":37,"time":"2024-04-19T02:05:15.334567Z","level":"?","tag":"kernel","msg":"Node 0 DMA32 free:45600kB boost:0kB min:4516kB low:5644kB high:6772kB","fmt":"journal","schema_version":1}
+{"seq":38,"time":"2024-04-19T02:05:15.345678Z","level":"?","tag":"kernel","msg":"Node 0 Normal free:234560kB boost:0kB min:28908kB low:36135kB high:43362kB","fmt":"journal","schema_version":1}
+{"seq":39,"time":"2024-04-19T02:05:15.356789Z","level":"?","tag":"kernel","msg":"Tasks state (memory values in pages):","fmt":"journal","schema_version":1}
+{"seq":40,"time":"2024-04-19T02:05:15.36789Z","level":"?","tag":"kernel","msg":"[  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name","fmt":"journal","schema_version":1}
+{"seq":41,"time":"2024-04-19T02:05:15.378901Z","level":"?","tag":"kernel","msg":"[    912]     0   912    22318     2048   208896        0             0 systemd-logind","fmt":"journal","schema_version":1}
+{"seq":42,"time":"2024-04-19T02:05:15.389012Z","level":"?","tag":"kernel","msg":"[   1034]   123  1034    20145     1824   172032        0             0 chronyd","fmt":"journal","schema_version":1}
+{"seq":43,"time":"2024-04-19T02:05:15.401234Z","level":"?","tag":"kernel","msg":"[   1145]     0  1145    89234     4512   516096        0          -900 dockerd","fmt":"journal","schema_version":1}
+{"seq":44,"time":"2024-04-19T02:05:15.412345Z","level":"?","tag":"kernel","msg":"[   4746]  1000  4746  2147483     1820412 14676992        0             0 queue-worker","fmt":"journal","schema_version":1}
+{"seq":45,"time":"2024-04-19T02:05:15.423456Z","level":"?","tag":"kernel","msg":"oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/system.slice/queue-worker.service,task=queue-worker,pid=4746,uid=1000","fmt":"journal","schema_version":1}
+{"seq":46,"time":"2024-04-19T02:05:15.434567Z","level":"?","tag":"kernel","msg":"Out of memory: Killed process 4746 (queue-worker) total-vm:8589934592kB, anon-rss:7281648kB, file-rss:0kB, shmem-rss:0kB, UID:1000 pgtables:14340kB oom_score_adj:0","fmt":"journal","schema_version":1}
+{"seq":47,"time":"2024-04-19T02:05:16.089012Z","level":"?","pid":1,"tag":"systemd","msg":"queue-worker.service: A process of this unit has been killed by the OOM killer.","fmt":"journal","schema_version":1}
+{"seq":48,"time":"2024-04-19T02:05:16.112345Z","level":"?","pid":1,"tag":"systemd","msg":"queue-worker.service: Main process exited, code=killed, status=9/KILL","fmt":"journal","schema_version":1}
+{"seq":49,"time":"2024-04-19T02:05:16.134567Z","level":"?","pid":1,"tag":"systemd","msg":"queue-worker.service: Failed with result 'oom-kill'.","fmt":"journal","schema_version":1}
+{"seq":50,"time":"2024-04-19T02:05:16.156789Z","level":"?","pid":1,"tag":"systemd","msg":"queue-worker.service: Consumed 2min 45.892s CPU time, 6.9G memory peak.","fmt":"journal","schema_version":1}

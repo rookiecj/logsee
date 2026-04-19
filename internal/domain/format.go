@@ -11,6 +11,9 @@ const (
 	LineFormatPlain
 	LineFormatBracket
 	LineFormatAndroid
+	// LineFormatJournal is `journalctl -o short-iso` / `short-iso-precise`
+	// output: ISO-8601 timestamp, hostname, tag[pid]:, message.
+	LineFormatJournal
 )
 
 var lineFormatNames = [...]string{
@@ -18,6 +21,7 @@ var lineFormatNames = [...]string{
 	LineFormatPlain:   "plain",
 	LineFormatBracket: "bracket",
 	LineFormatAndroid: "android",
+	LineFormatJournal: "journal",
 }
 
 // String returns the stable snake_case name used on the wire.
@@ -44,6 +48,8 @@ func (f *LineFormat) UnmarshalText(b []byte) error {
 		*f = LineFormatBracket
 	case "android":
 		*f = LineFormatAndroid
+	case "journal":
+		*f = LineFormatJournal
 	default:
 		*f = LineFormatUnknown
 	}

@@ -1,0 +1,50 @@
+{"seq":1,"time":"2024-04-19T03:00:00.001234Z","level":"?","pid":2145,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/report-stats.sh)","fmt":"journal","schema_version":1}
+{"seq":2,"time":"2024-04-19T03:00:05.089012Z","level":"?","pid":1,"tag":"systemd","msg":"Starting logrotate.service - Rotate log files...","fmt":"journal","schema_version":1}
+{"seq":3,"time":"2024-04-19T03:00:05.112345Z","level":"?","pid":1,"tag":"systemd","msg":"logrotate.service: Deactivated successfully.","fmt":"journal","schema_version":1}
+{"seq":4,"time":"2024-04-19T03:00:15.134567Z","level":"?","pid":1034,"tag":"chronyd","msg":"Selected source 10.0.0.1 (time.internal)","fmt":"journal","schema_version":1}
+{"seq":5,"time":"2024-04-19T03:01:00.001234Z","level":"?","pid":1,"tag":"systemd","msg":"Started session-12.scope - Session 12 of User ops.","fmt":"journal","schema_version":1}
+{"seq":6,"time":"2024-04-19T03:01:02.089012Z","level":"?","pid":2201,"tag":"sshd","msg":"Accepted publickey for ops from 10.0.3.21 port 51023 ssh2","fmt":"journal","schema_version":1}
+{"seq":7,"time":"2024-04-19T03:01:05.112345Z","level":"?","pid":912,"tag":"systemd-logind","msg":"New session 12 of user ops.","fmt":"journal","schema_version":1}
+{"seq":8,"time":"2024-04-19T03:01:30.001234Z","level":"?","pid":1789,"tag":"api-server","msg":"method=GET path=/v1/status code=200 duration=12ms","fmt":"journal","schema_version":1}
+{"seq":9,"time":"2024-04-19T03:01:45.089012Z","level":"?","pid":1789,"tag":"api-server","msg":"method=POST path=/v1/items code=201 duration=45ms","fmt":"journal","schema_version":1}
+{"seq":10,"time":"2024-04-19T03:02:00.001234Z","level":"?","pid":2301,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/metric-push.sh)","fmt":"journal","schema_version":1}
+{"seq":11,"time":"2024-04-19T03:02:15.089012Z","level":"?","pid":1789,"tag":"api-server","msg":"method=GET path=/v1/items code=200 duration=23ms","fmt":"journal","schema_version":1}
+{"seq":12,"time":"2024-04-19T03:03:00.001234Z","level":"?","pid":1789,"tag":"api-server","msg":"method=POST path=/v1/process code=200 duration=145ms","fmt":"journal","schema_version":1}
+{"seq":13,"time":"2024-04-19T03:03:10.045678Z","level":"?","pid":1789,"tag":"api-server","msg":"method=GET path=/v1/download code=200 duration=89ms","fmt":"journal","schema_version":1}
+{"seq":14,"time":"2024-04-19T03:03:22.123456Z","level":"?","pid":1789,"tag":"api-server","msg":"method=POST path=/v1/transform code=500 duration=234ms","fmt":"journal","schema_version":1}
+{"seq":15,"time":"2024-04-19T03:03:22.145678Z","level":"?","pid":1789,"tag":"api-server","msg":"panic: runtime error: index out of range [12] with length 8","fmt":"journal","schema_version":1}
+{"seq":16,"time":"2024-04-19T03:03:22.16789Z","level":"?","pid":1789,"tag":"api-server","msg":"goroutine 42 [running]:","fmt":"journal","schema_version":1}
+{"seq":17,"time":"2024-04-19T03:03:22.189012Z","level":"?","pid":1789,"tag":"api-server","msg":"main.(*Transformer).Process(...)","fmt":"journal","schema_version":1}
+{"seq":18,"time":"2024-04-19T03:03:22.201234Z","level":"?","pid":1789,"tag":"api-server","msg":"\t/build/api-server/transformer.go:89","fmt":"journal","schema_version":1}
+{"seq":19,"time":"2024-04-19T03:03:22.212345Z","level":"?","pid":1789,"tag":"api-server","msg":"main.(*Handler).ServeHTTP(0xc000123400, ...)","fmt":"journal","schema_version":1}
+{"seq":20,"time":"2024-04-19T03:03:22.223456Z","level":"?","pid":1789,"tag":"api-server","msg":"\t/build/api-server/http.go:145","fmt":"journal","schema_version":1}
+{"seq":21,"time":"2024-04-19T03:03:22.234567Z","level":"?","pid":1789,"tag":"api-server","msg":"[signal SIGABRT: abort]","fmt":"journal","schema_version":1}
+{"seq":22,"time":"2024-04-19T03:03:22.245678Z","level":"?","tag":"kernel","msg":"api-server[1789]: segfault at 18 ip 00005632a8b5c1e1 sp 00007ffc1234abcd error 4 in api-server[5632a8a00000+b00000]","fmt":"journal","schema_version":1}
+{"seq":23,"time":"2024-04-19T03:03:22.256789Z","level":"?","tag":"kernel","msg":"Code: 48 8b 05 20 80 00 00 48 85 c0 74 08 48 8b 78 18 e8 12 34 ff ff","fmt":"journal","schema_version":1}
+{"seq":24,"time":"2024-04-19T03:03:22.26789Z","level":"?","pid":1,"tag":"systemd","msg":"api-server.service: Main process exited, code=dumped, status=11/SEGV","fmt":"journal","schema_version":1}
+{"seq":25,"time":"2024-04-19T03:03:22.278901Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"[🡕] Process 1789 (api-server) of user 1002 dumped core.","fmt":"journal","schema_version":1}
+{"seq":26,"time":"2024-04-19T03:03:22.289012Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"Stack trace of thread 1789:","fmt":"journal","schema_version":1}
+{"seq":27,"time":"2024-04-19T03:03:22.301234Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#0  0x00005632a8b5c1e1 runtime.sigpanic (api-server + 0x15c1e1)","fmt":"journal","schema_version":1}
+{"seq":28,"time":"2024-04-19T03:03:22.312345Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#1  0x00005632a8b6a023 main.(*Transformer).Process.func1 (api-server + 0x16a023)","fmt":"journal","schema_version":1}
+{"seq":29,"time":"2024-04-19T03:03:22.323456Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#2  0x00005632a8b6a145 main.(*Transformer).Process (api-server + 0x16a145)","fmt":"journal","schema_version":1}
+{"seq":30,"time":"2024-04-19T03:03:22.334567Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#3  0x00005632a8b71a89 main.(*Handler).ServeHTTP (api-server + 0x171a89)","fmt":"journal","schema_version":1}
+{"seq":31,"time":"2024-04-19T03:03:22.345678Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#4  0x00005632a8a23456 net/http.HandlerFunc.ServeHTTP (api-server + 0x23456)","fmt":"journal","schema_version":1}
+{"seq":32,"time":"2024-04-19T03:03:22.356789Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#5  0x00005632a8a3abcd net/http.serverHandler.ServeHTTP (api-server + 0x3abcd)","fmt":"journal","schema_version":1}
+{"seq":33,"time":"2024-04-19T03:03:22.36789Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#6  0x00005632a8a45678 net/http.(*conn).serve (api-server + 0x45678)","fmt":"journal","schema_version":1}
+{"seq":34,"time":"2024-04-19T03:03:22.378901Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"#7  0x00005632a8001234 runtime.goexit (api-server + 0x1234)","fmt":"journal","schema_version":1}
+{"seq":35,"time":"2024-04-19T03:03:22.389012Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"Coredump diverted to /var/lib/systemd/coredump/core.api-server.1002.abc123.1789.1713520602000000.zst","fmt":"journal","schema_version":1}
+{"seq":36,"time":"2024-04-19T03:03:22.401234Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"Module /lib/x86_64-linux-gnu/libc.so.6 from deb package libc6-2.39-0ubuntu1","fmt":"journal","schema_version":1}
+{"seq":37,"time":"2024-04-19T03:03:22.412345Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"Module /usr/bin/api-server without build-id.","fmt":"journal","schema_version":1}
+{"seq":38,"time":"2024-04-19T03:03:22.423456Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"ProcessName: api-server","fmt":"journal","schema_version":1}
+{"seq":39,"time":"2024-04-19T03:03:22.434567Z","level":"?","pid":2345,"tag":"systemd-coredump","msg":"CoreFile: /var/lib/systemd/coredump/core.api-server.1002.abc123.1789.1713520602000000.zst","fmt":"journal","schema_version":1}
+{"seq":40,"time":"2024-04-19T03:03:22.445678Z","level":"?","pid":1,"tag":"systemd","msg":"api-server.service: Failed with result 'core-dump'.","fmt":"journal","schema_version":1}
+{"seq":41,"time":"2024-04-19T03:03:22.456789Z","level":"?","pid":1,"tag":"systemd","msg":"api-server.service: Consumed 5min 12.345s CPU time, 412.5M memory peak.","fmt":"journal","schema_version":1}
+{"seq":42,"time":"2024-04-19T03:03:22.46789Z","level":"?","pid":1,"tag":"systemd","msg":"api-server.service: Scheduled restart job, restart counter is at 1.","fmt":"journal","schema_version":1}
+{"seq":43,"time":"2024-04-19T03:03:22.478901Z","level":"?","pid":1,"tag":"systemd","msg":"Stopped api-server.service - REST API server.","fmt":"journal","schema_version":1}
+{"seq":44,"time":"2024-04-19T03:03:23.001234Z","level":"?","pid":1,"tag":"systemd","msg":"Starting api-server.service - REST API server...","fmt":"journal","schema_version":1}
+{"seq":45,"time":"2024-04-19T03:03:23.089012Z","level":"?","pid":2389,"tag":"api-server","msg":"starting up version=v2.4.1 build=abc123","fmt":"journal","schema_version":1}
+{"seq":46,"time":"2024-04-19T03:03:23.112345Z","level":"?","pid":2389,"tag":"api-server","msg":"listening on :8080","fmt":"journal","schema_version":1}
+{"seq":47,"time":"2024-04-19T03:03:23.134567Z","level":"?","pid":1,"tag":"systemd","msg":"Started api-server.service - REST API server.","fmt":"journal","schema_version":1}
+{"seq":48,"time":"2024-04-19T03:03:30.089012Z","level":"?","pid":2389,"tag":"api-server","msg":"method=GET path=/v1/status code=200 duration=11ms","fmt":"journal","schema_version":1}
+{"seq":49,"time":"2024-04-19T03:03:35.112345Z","level":"?","pid":2412,"tag":"pagerduty-alert","msg":"incident created: PD-CORE-20240419-0303 severity=high component=api-server","fmt":"journal","schema_version":1}
+{"seq":50,"time":"2024-04-19T03:04:00.001234Z","level":"?","pid":2434,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/metric-push.sh)","fmt":"journal","schema_version":1}

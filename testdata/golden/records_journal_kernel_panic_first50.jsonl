@@ -1,0 +1,50 @@
+{"seq":1,"time":"2024-04-19T09:12:00.001234Z","level":"?","pid":1,"tag":"systemd","msg":"Started session-3.scope - Session 3 of User root.","fmt":"journal","schema_version":1}
+{"seq":2,"time":"2024-04-19T09:12:00.045678Z","level":"?","pid":4521,"tag":"sshd","msg":"Accepted publickey for root from 10.0.5.12 port 51234 ssh2","fmt":"journal","schema_version":1}
+{"seq":3,"time":"2024-04-19T09:12:01.089012Z","level":"?","pid":912,"tag":"systemd-logind","msg":"New session 3 of user root.","fmt":"journal","schema_version":1}
+{"seq":4,"time":"2024-04-19T09:12:10.001234Z","level":"?","tag":"kernel","msg":"audit: type=1400 audit(1713517930.001:42): apparmor=\"STATUS\" operation=\"profile_load\"","fmt":"journal","schema_version":1}
+{"seq":5,"time":"2024-04-19T09:12:15.089012Z","level":"?","pid":4534,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/db-backup.sh)","fmt":"journal","schema_version":1}
+{"seq":6,"time":"2024-04-19T09:12:30.001234Z","level":"?","pid":4589,"tag":"kvm","msg":"VCPU0 unhandled rdmsr: 0x64d","fmt":"journal","schema_version":1}
+{"seq":7,"time":"2024-04-19T09:12:30.045678Z","level":"?","pid":4589,"tag":"kvm","msg":"VCPU0 unhandled rdmsr: 0x1a2","fmt":"journal","schema_version":1}
+{"seq":8,"time":"2024-04-19T09:12:32.089012Z","level":"?","tag":"kernel","msg":"Rebooted without UEFI PE persistent memory: can be unreliable","fmt":"journal","schema_version":1}
+{"seq":9,"time":"2024-04-19T09:12:45.123456Z","level":"?","pid":1034,"tag":"chronyd","msg":"Selected source 10.0.0.1 (time.internal)","fmt":"journal","schema_version":1}
+{"seq":10,"time":"2024-04-19T09:13:00.001234Z","level":"?","pid":1,"tag":"systemd","msg":"Started logrotate.timer - Daily rotation of log files.","fmt":"journal","schema_version":1}
+{"seq":11,"time":"2024-04-19T09:13:15.089012Z","level":"?","pid":1145,"tag":"dockerd","msg":"time=\"2024-04-19T09:13:15Z\" level=info msg=\"container started\" containerID=abc123","fmt":"journal","schema_version":1}
+{"seq":12,"time":"2024-04-19T09:13:30.112345Z","level":"?","tag":"kernel","msg":"nvme0n1: detected capacity change from 0 to 1953525168","fmt":"journal","schema_version":1}
+{"seq":13,"time":"2024-04-19T09:13:45.123456Z","level":"?","pid":1198,"tag":"smartd","msg":"Device: /dev/nvme0n1, data checksum error","fmt":"journal","schema_version":1}
+{"seq":14,"time":"2024-04-19T09:13:45.145678Z","level":"?","pid":1198,"tag":"smartd","msg":"Device: /dev/nvme0n1, previous self-test completed without error","fmt":"journal","schema_version":1}
+{"seq":15,"time":"2024-04-19T09:14:00.189012Z","level":"?","tag":"kernel","msg":"nvme nvme0: I/O 512 (READ) QID 1 timeout, aborting","fmt":"journal","schema_version":1}
+{"seq":16,"time":"2024-04-19T09:14:00.212345Z","level":"?","tag":"kernel","msg":"nvme nvme0: I/O 512 QID 1 timeout, reset controller","fmt":"journal","schema_version":1}
+{"seq":17,"time":"2024-04-19T09:14:02.123456Z","level":"?","tag":"kernel","msg":"nvme nvme0: Abort status: 0x7","fmt":"journal","schema_version":1}
+{"seq":18,"time":"2024-04-19T09:14:02.145678Z","level":"?","tag":"kernel","msg":"nvme nvme0: Device not ready; aborting reset, CSTS=0x1","fmt":"journal","schema_version":1}
+{"seq":19,"time":"2024-04-19T09:14:02.16789Z","level":"?","tag":"kernel","msg":"nvme nvme0: Removing after probe failure status: -19","fmt":"journal","schema_version":1}
+{"seq":20,"time":"2024-04-19T09:14:02.189012Z","level":"?","tag":"kernel","msg":"nvme0n1: Read-error on swap-device (259:0:12345)","fmt":"journal","schema_version":1}
+{"seq":21,"time":"2024-04-19T09:14:02.212345Z","level":"?","tag":"kernel","msg":"EXT4-fs (nvme0n1p3): I/O error while writing superblock","fmt":"journal","schema_version":1}
+{"seq":22,"time":"2024-04-19T09:14:02.234567Z","level":"?","tag":"kernel","msg":"EXT4-fs error (device nvme0n1p3): ext4_journal_check_start:83: Detected aborted journal","fmt":"journal","schema_version":1}
+{"seq":23,"time":"2024-04-19T09:14:02.256789Z","level":"?","tag":"kernel","msg":"EXT4-fs (nvme0n1p3): Remounting filesystem read-only","fmt":"journal","schema_version":1}
+{"seq":24,"time":"2024-04-19T09:14:02.278901Z","level":"?","tag":"kernel","msg":"BUG: kernel NULL pointer dereference, address: 0000000000000018","fmt":"journal","schema_version":1}
+{"seq":25,"time":"2024-04-19T09:14:02.289012Z","level":"?","tag":"kernel","msg":"#PF: supervisor read access in kernel mode","fmt":"journal","schema_version":1}
+{"seq":26,"time":"2024-04-19T09:14:02.301234Z","level":"?","tag":"kernel","msg":"#PF: error_code(0x0000) - not-present page","fmt":"journal","schema_version":1}
+{"seq":27,"time":"2024-04-19T09:14:02.312345Z","level":"?","tag":"kernel","msg":"PGD 0 P4D 0","fmt":"journal","schema_version":1}
+{"seq":28,"time":"2024-04-19T09:14:02.323456Z","level":"?","tag":"kernel","msg":"Oops: 0000 [#1] SMP NOPTI","fmt":"journal","schema_version":1}
+{"seq":29,"time":"2024-04-19T09:14:02.334567Z","level":"?","tag":"kernel","msg":"CPU: 3 PID: 4687 Comm: kworker/3:1 Tainted: G        W          6.5.0-26-generic #26-Ubuntu","fmt":"journal","schema_version":1}
+{"seq":30,"time":"2024-04-19T09:14:02.345678Z","level":"?","tag":"kernel","msg":"Hardware name: Dell Inc. PowerEdge R640, BIOS 2.12.1 05/19/2023","fmt":"journal","schema_version":1}
+{"seq":31,"time":"2024-04-19T09:14:02.356789Z","level":"?","tag":"kernel","msg":"Workqueue: events nvme_reset_work [nvme]","fmt":"journal","schema_version":1}
+{"seq":32,"time":"2024-04-19T09:14:02.36789Z","level":"?","tag":"kernel","msg":"RIP: 0010:nvme_timeout+0x1e1/0x3f0 [nvme]","fmt":"journal","schema_version":1}
+{"seq":33,"time":"2024-04-19T09:14:02.378901Z","level":"?","tag":"kernel","msg":"Code: 48 8b 05 20 80 00 00 48 85 c0 74 08 48 8b 78 18 e8 12 34 ff ff","fmt":"journal","schema_version":1}
+{"seq":34,"time":"2024-04-19T09:14:02.389012Z","level":"?","tag":"kernel","msg":"RSP: 0018:ffffc90001234e48 EFLAGS: 00010246","fmt":"journal","schema_version":1}
+{"seq":35,"time":"2024-04-19T09:14:02.401234Z","level":"?","tag":"kernel","msg":"RAX: 0000000000000000 RBX: ffff88810abcde00 RCX: 0000000000000000","fmt":"journal","schema_version":1}
+{"seq":36,"time":"2024-04-19T09:14:02.412345Z","level":"?","tag":"kernel","msg":"RDX: 0000000000000018 RSI: ffffffff826abcde RDI: ffff88810abcde00","fmt":"journal","schema_version":1}
+{"seq":37,"time":"2024-04-19T09:14:02.423456Z","level":"?","tag":"kernel","msg":"RBP: ffffc90001234e80 R08: 0000000000000000 R09: 0000000000000000","fmt":"journal","schema_version":1}
+{"seq":38,"time":"2024-04-19T09:14:02.434567Z","level":"?","tag":"kernel","msg":"R10: ffffffff82d01234 R11: 0000000000000000 R12: ffff88810abcde00","fmt":"journal","schema_version":1}
+{"seq":39,"time":"2024-04-19T09:14:02.445678Z","level":"?","tag":"kernel","msg":"R13: 0000000000000000 R14: ffff88810fe01234 R15: ffff88810abcde60","fmt":"journal","schema_version":1}
+{"seq":40,"time":"2024-04-19T09:14:02.456789Z","level":"?","tag":"kernel","msg":"FS:  0000000000000000(0000) GS:ffff888860e00000(0000) knlGS:0000000000000000","fmt":"journal","schema_version":1}
+{"seq":41,"time":"2024-04-19T09:14:02.46789Z","level":"?","tag":"kernel","msg":"CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033","fmt":"journal","schema_version":1}
+{"seq":42,"time":"2024-04-19T09:14:02.478901Z","level":"?","tag":"kernel","msg":"CR2: 0000000000000018 CR3: 0000000100410000 CR4: 0000000000750ee0","fmt":"journal","schema_version":1}
+{"seq":43,"time":"2024-04-19T09:14:02.489012Z","level":"?","tag":"kernel","msg":"Call Trace:","fmt":"journal","schema_version":1}
+{"seq":44,"time":"2024-04-19T09:14:02.501234Z","level":"?","tag":"kernel","msg":" \u003cTASK\u003e","fmt":"journal","schema_version":1}
+{"seq":45,"time":"2024-04-19T09:14:02.512345Z","level":"?","tag":"kernel","msg":" ? show_regs.part.0+0x20/0x30","fmt":"journal","schema_version":1}
+{"seq":46,"time":"2024-04-19T09:14:02.523456Z","level":"?","tag":"kernel","msg":" ? __die+0x23/0x70","fmt":"journal","schema_version":1}
+{"seq":47,"time":"2024-04-19T09:14:02.534567Z","level":"?","tag":"kernel","msg":" ? page_fault_oops+0x171/0x4e0","fmt":"journal","schema_version":1}
+{"seq":48,"time":"2024-04-19T09:14:02.545678Z","level":"?","tag":"kernel","msg":" ? exc_page_fault+0x7f/0x180","fmt":"journal","schema_version":1}
+{"seq":49,"time":"2024-04-19T09:14:02.556789Z","level":"?","tag":"kernel","msg":" ? asm_exc_page_fault+0x26/0x30","fmt":"journal","schema_version":1}
+{"seq":50,"time":"2024-04-19T09:14:02.56789Z","level":"?","tag":"kernel","msg":" ? nvme_timeout+0x1e1/0x3f0 [nvme]","fmt":"journal","schema_version":1}

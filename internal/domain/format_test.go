@@ -14,6 +14,7 @@ func TestLineFormat_StringAndMarshalling(t *testing.T) {
 		{LineFormatPlain, "plain"},
 		{LineFormatBracket, "bracket"},
 		{LineFormatAndroid, "android"},
+		{LineFormatJournal, "journal"},
 		{LineFormat(99), "unknown"},
 	}
 	for _, tc := range cases {
@@ -31,7 +32,7 @@ func TestLineFormat_StringAndMarshalling(t *testing.T) {
 }
 
 func TestLineFormat_JSONRoundTrip(t *testing.T) {
-	for _, f := range []LineFormat{LineFormatUnknown, LineFormatPlain, LineFormatBracket, LineFormatAndroid} {
+	for _, f := range []LineFormat{LineFormatUnknown, LineFormatPlain, LineFormatBracket, LineFormatAndroid, LineFormatJournal} {
 		b, err := json.Marshal(f)
 		if err != nil {
 			t.Fatalf("Marshal: %v", err)

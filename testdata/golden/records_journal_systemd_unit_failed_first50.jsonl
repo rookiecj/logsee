@@ -1,0 +1,50 @@
+{"seq":1,"time":"2024-04-19T14:22:10.001234+09:00","level":"?","pid":1,"tag":"systemd","msg":"Starting nginx.service - nginx - high performance web server...","fmt":"journal","schema_version":1}
+{"seq":2,"time":"2024-04-19T14:22:10.045612+09:00","level":"?","pid":4521,"tag":"nginx","msg":"nginx: the configuration file /etc/nginx/nginx.conf syntax is ok","fmt":"journal","schema_version":1}
+{"seq":3,"time":"2024-04-19T14:22:10.078901+09:00","level":"?","pid":4521,"tag":"nginx","msg":"nginx: configuration file /etc/nginx/nginx.conf test is successful","fmt":"journal","schema_version":1}
+{"seq":4,"time":"2024-04-19T14:22:10.124567+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Control process exited, code=exited, status=0/SUCCESS","fmt":"journal","schema_version":1}
+{"seq":5,"time":"2024-04-19T14:22:10.189234+09:00","level":"?","pid":1,"tag":"systemd","msg":"Started nginx.service - nginx - high performance web server.","fmt":"journal","schema_version":1}
+{"seq":6,"time":"2024-04-19T14:22:10.245012+09:00","level":"?","pid":4525,"tag":"nginx","msg":"2024/04/19 14:22:10 [notice] 4525#4525: nginx/1.24.0 (Ubuntu)","fmt":"journal","schema_version":1}
+{"seq":7,"time":"2024-04-19T14:22:10.278456+09:00","level":"?","pid":4525,"tag":"nginx","msg":"2024/04/19 14:22:10 [notice] 4525#4525: OS: Linux 6.5.0-26-generic","fmt":"journal","schema_version":1}
+{"seq":8,"time":"2024-04-19T14:22:10.312901+09:00","level":"?","pid":4525,"tag":"nginx","msg":"2024/04/19 14:22:10 [notice] 4525#4525: worker processes: 8","fmt":"journal","schema_version":1}
+{"seq":9,"time":"2024-04-19T14:22:15.102345+09:00","level":"?","pid":4512,"tag":"sshd","msg":"Accepted publickey for ops from 10.0.1.12 port 51234 ssh2","fmt":"journal","schema_version":1}
+{"seq":10,"time":"2024-04-19T14:22:15.134567+09:00","level":"?","pid":912,"tag":"systemd-logind","msg":"New session 42 of user ops.","fmt":"journal","schema_version":1}
+{"seq":11,"time":"2024-04-19T14:22:20.045678+09:00","level":"?","pid":1034,"tag":"cron","msg":"(root) CMD (/usr/sbin/logrotate /etc/logrotate.conf)","fmt":"journal","schema_version":1}
+{"seq":12,"time":"2024-04-19T14:22:45.198234+09:00","level":"?","tag":"kernel","msg":"[UFW BLOCK] IN=eth0 OUT= MAC=... SRC=192.0.2.10 DST=10.0.1.5 LEN=60 TOS=0x00 PREC=0x00 TTL=52 ID=54321 PROTO=TCP SPT=34521 DPT=4444","fmt":"journal","schema_version":1}
+{"seq":13,"time":"2024-04-19T14:23:00.001001+09:00","level":"?","pid":4612,"tag":"CRON","msg":"(root) CMD (/usr/local/bin/monitor.sh)","fmt":"journal","schema_version":1}
+{"seq":14,"time":"2024-04-19T14:23:05.089012+09:00","level":"?","pid":4525,"tag":"nginx","msg":"2024/04/19 14:23:05 [info] 4525#4525: reconfiguring","fmt":"journal","schema_version":1}
+{"seq":15,"time":"2024-04-19T14:23:05.123456+09:00","level":"?","pid":4525,"tag":"nginx","msg":"2024/04/19 14:23:05 [error] 4525#4525: *1234 upstream timed out (110: Connection timed out) while reading response header from upstream, client: 10.0.2.40","fmt":"journal","schema_version":1}
+{"seq":16,"time":"2024-04-19T14:23:10.045678+09:00","level":"?","pid":1,"tag":"systemd","msg":"Reloading nginx.service - nginx - high performance web server...","fmt":"journal","schema_version":1}
+{"seq":17,"time":"2024-04-19T14:23:10.089012+09:00","level":"?","pid":4687,"tag":"nginx","msg":"nginx: [emerg] cannot load certificate \"/etc/nginx/certs/api.pem\": BIO_new_file() failed (SSL: error:80000002:system library::No such file or directory:fopen('/etc/nginx/certs/api.pem','r'))","fmt":"journal","schema_version":1}
+{"seq":18,"time":"2024-04-19T14:23:10.123456+09:00","level":"?","pid":4687,"tag":"nginx","msg":"nginx: configuration file /etc/nginx/nginx.conf test failed","fmt":"journal","schema_version":1}
+{"seq":19,"time":"2024-04-19T14:23:10.145678+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Control process exited, code=exited, status=1/FAILURE","fmt":"journal","schema_version":1}
+{"seq":20,"time":"2024-04-19T14:23:10.16789+09:00","level":"?","pid":1,"tag":"systemd","msg":"Reload failed for nginx.service - nginx - high performance web server.","fmt":"journal","schema_version":1}
+{"seq":21,"time":"2024-04-19T14:23:15.201234+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Main process exited, code=killed, status=11/SEGV","fmt":"journal","schema_version":1}
+{"seq":22,"time":"2024-04-19T14:23:15.234567+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Failed with result 'signal'.","fmt":"journal","schema_version":1}
+{"seq":23,"time":"2024-04-19T14:23:15.289012+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Consumed 1.245s CPU time.","fmt":"journal","schema_version":1}
+{"seq":24,"time":"2024-04-19T14:23:15.312345+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Scheduled restart job, restart counter is at 1.","fmt":"journal","schema_version":1}
+{"seq":25,"time":"2024-04-19T14:23:15.345678+09:00","level":"?","pid":1,"tag":"systemd","msg":"Stopped nginx.service - nginx - high performance web server.","fmt":"journal","schema_version":1}
+{"seq":26,"time":"2024-04-19T14:23:16.001234+09:00","level":"?","pid":1,"tag":"systemd","msg":"Starting nginx.service - nginx - high performance web server...","fmt":"journal","schema_version":1}
+{"seq":27,"time":"2024-04-19T14:23:16.023456+09:00","level":"?","pid":4712,"tag":"nginx","msg":"nginx: [emerg] cannot load certificate \"/etc/nginx/certs/api.pem\": BIO_new_file() failed","fmt":"journal","schema_version":1}
+{"seq":28,"time":"2024-04-19T14:23:16.034567+09:00","level":"?","pid":4712,"tag":"nginx","msg":"nginx: configuration file /etc/nginx/nginx.conf test failed","fmt":"journal","schema_version":1}
+{"seq":29,"time":"2024-04-19T14:23:16.056789+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Control process exited, code=exited, status=1/FAILURE","fmt":"journal","schema_version":1}
+{"seq":30,"time":"2024-04-19T14:23:16.078901+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Failed with result 'exit-code'.","fmt":"journal","schema_version":1}
+{"seq":31,"time":"2024-04-19T14:23:16.089012+09:00","level":"?","pid":1,"tag":"systemd","msg":"Failed to start nginx.service - nginx - high performance web server.","fmt":"journal","schema_version":1}
+{"seq":32,"time":"2024-04-19T14:23:16.112345+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Scheduled restart job, restart counter is at 2.","fmt":"journal","schema_version":1}
+{"seq":33,"time":"2024-04-19T14:23:21.134567+09:00","level":"?","pid":1,"tag":"systemd","msg":"Starting nginx.service - nginx - high performance web server...","fmt":"journal","schema_version":1}
+{"seq":34,"time":"2024-04-19T14:23:21.156789+09:00","level":"?","pid":4734,"tag":"nginx","msg":"nginx: [emerg] cannot load certificate \"/etc/nginx/certs/api.pem\": BIO_new_file() failed","fmt":"journal","schema_version":1}
+{"seq":35,"time":"2024-04-19T14:23:21.178901+09:00","level":"?","pid":4734,"tag":"nginx","msg":"nginx: configuration file /etc/nginx/nginx.conf test failed","fmt":"journal","schema_version":1}
+{"seq":36,"time":"2024-04-19T14:23:21.189012+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Control process exited, code=exited, status=1/FAILURE","fmt":"journal","schema_version":1}
+{"seq":37,"time":"2024-04-19T14:23:21.201234+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Failed with result 'exit-code'.","fmt":"journal","schema_version":1}
+{"seq":38,"time":"2024-04-19T14:23:21.223456+09:00","level":"?","pid":1,"tag":"systemd","msg":"Failed to start nginx.service - nginx - high performance web server.","fmt":"journal","schema_version":1}
+{"seq":39,"time":"2024-04-19T14:23:21.234567+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Start request repeated too quickly.","fmt":"journal","schema_version":1}
+{"seq":40,"time":"2024-04-19T14:23:21.245678+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Failed with result 'exit-code'.","fmt":"journal","schema_version":1}
+{"seq":41,"time":"2024-04-19T14:23:21.26789+09:00","level":"?","pid":1,"tag":"systemd","msg":"Failed to start nginx.service - nginx - high performance web server.","fmt":"journal","schema_version":1}
+{"seq":42,"time":"2024-04-19T14:23:21.289012+09:00","level":"?","pid":1,"tag":"systemd","msg":"nginx.service: Triggering OnFailure= dependencies.","fmt":"journal","schema_version":1}
+{"seq":43,"time":"2024-04-19T14:23:22.001234+09:00","level":"?","pid":1,"tag":"systemd","msg":"Started pagerduty-alert@nginx.service - Page on-call for nginx.","fmt":"journal","schema_version":1}
+{"seq":44,"time":"2024-04-19T14:23:22.045678+09:00","level":"?","pid":4801,"tag":"pagerduty-alert","msg":"incident created: PD-ABCD1234 severity=high","fmt":"journal","schema_version":1}
+{"seq":45,"time":"2024-04-19T14:23:30.001234+09:00","level":"?","pid":1,"tag":"systemd","msg":"session-42.scope: Deactivated successfully.","fmt":"journal","schema_version":1}
+{"seq":46,"time":"2024-04-19T14:23:30.023456+09:00","level":"?","pid":912,"tag":"systemd-logind","msg":"Session 42 logged out. Waiting for processes to exit.","fmt":"journal","schema_version":1}
+{"seq":47,"time":"2024-04-19T14:23:30.045678+09:00","level":"?","pid":912,"tag":"systemd-logind","msg":"Removed session 42.","fmt":"journal","schema_version":1}
+{"seq":48,"time":"2024-04-19T14:24:00.001234+09:00","level":"?","pid":4834,"tag":"CRON","msg":"(root) CMD (/usr/sbin/logrotate /etc/logrotate.conf)","fmt":"journal","schema_version":1}
+{"seq":49,"time":"2024-04-19T14:24:05.089012+09:00","level":"?","pid":4845,"tag":"systemd-tmpfiles","msg":"/usr/lib/tmpfiles.d/mlocate.conf:1: Duplicate line for path \"/var/lib/mlocate\", ignoring.","fmt":"journal","schema_version":1}
+{"seq":50,"time":"2024-04-19T14:24:12.178901+09:00","level":"?","pid":1089,"tag":"chronyd","msg":"Selected source 10.0.0.1 (time.internal)","fmt":"journal","schema_version":1}
