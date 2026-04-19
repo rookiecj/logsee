@@ -10,6 +10,7 @@ const (
 	FindingUnknown FindingKind = iota
 
 	// Tier A — deterministic signatures (rule-based, high precision).
+	// Android adb log origin.
 	FindingFatalJava
 	FindingANR
 	FindingNativeCrashHeader
@@ -19,6 +20,16 @@ const (
 	FindingSELinuxDenied
 	FindingWTF
 	FindingOOM
+
+	// Systemd/Linux kernel journal origin.
+	FindingSystemdUnitFailed
+	FindingSystemdCoredump
+	FindingKernelPanic
+	FindingKernelBUG
+	FindingSegfaultLinux
+	FindingOOMKilledLinux
+	FindingAppArmorDenied
+	FindingSSHAuthFailure
 
 	// Tier B — stateful behavioural anomalies.
 	FindingGCStorm
@@ -42,6 +53,14 @@ var findingKindNames = [...]string{
 	FindingSELinuxDenied:     "selinux_denied",
 	FindingWTF:               "wtf",
 	FindingOOM:               "oom",
+	FindingSystemdUnitFailed: "systemd_unit_failed",
+	FindingSystemdCoredump:   "systemd_coredump",
+	FindingKernelPanic:       "kernel_panic",
+	FindingKernelBUG:         "kernel_bug",
+	FindingSegfaultLinux:     "segfault",
+	FindingOOMKilledLinux:    "oom_killed",
+	FindingAppArmorDenied:    "apparmor_denied",
+	FindingSSHAuthFailure:    "ssh_auth_failure",
 	FindingGCStorm:           "gc_storm",
 	FindingWakelockLeak:      "wakelock_leak",
 	FindingBootLoop:          "boot_loop",

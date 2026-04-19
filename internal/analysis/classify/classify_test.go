@@ -58,6 +58,7 @@ func TestClassifier_OnRecord_ANR(t *testing.T) {
 	r := domain.Record{Seq: 42, Tag: "ActivityManager", Level: domain.LevelError,
 		Message: "ANR in com.example.app (com.example.app/.MainActivity)",
 		PID:     1245,
+		Format:  domain.LineFormatAndroid,
 	}
 	out := c.OnRecord(r)
 	if len(out.Findings) != 1 || out.Spans != nil {
@@ -80,6 +81,7 @@ func TestClassifier_OnRecord_NativeCrashHeader(t *testing.T) {
 	r := domain.Record{Seq: 7, Tag: "DEBUG", Level: domain.LevelFatal,
 		Message: "*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***",
 		PID:     4567,
+		Format:  domain.LineFormatAndroid,
 	}
 	out := c.OnRecord(r)
 	if len(out.Findings) != 1 || out.Findings[0].Kind != domain.FindingNativeCrashHeader {
