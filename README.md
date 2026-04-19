@@ -84,6 +84,10 @@ logsee [flags] [input-file]
   - 서로 다른 `tag` 키, 그리고 일반(비태그) 토큰들은 **AND**
   - 같은 `tag` 키에서 여러 `+value`는 **OR**
   - 최상위 OR는 단독 토큰 `|`로 가지를 나눕니다(예: `level:WARN | timeout`)
+- **예약 태그**:
+  - `level:<V|D|I|W|E|F>` — adb/bracket 포맷에서 추출된 심각도
+  - `anomaly:<kind>` — 분류기가 탐지한 이상(예: `anomaly:anr`, `anomaly:fatal_java`, `anomaly:native_crash_header`). 와일드카드 `anomaly:any`는 **어떤 종류든** finding이 있는 줄을 매칭
+  - 대문자 `A` 키는 `anomaly:any` 를 입력하지 않고도 같은 효과 (anomaly-only 토글)
 
 정확한 규칙은 PRD의 **§7(필터 문법)** 를 참고하세요.
 

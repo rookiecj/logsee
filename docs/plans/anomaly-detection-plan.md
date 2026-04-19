@@ -342,7 +342,8 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 | v1.5.0 | Phase 7 | `--export-anomalies` 정식 |
 | v1.6.0 | Phase 8 | MCP 서버 |
 | v1.7.0 | Phase 9(plumbing)–10 | TUI 훅 + README/예제 |
-| v1.8.0 (예정) | Phase 9b | gutter 마커, `anomaly:*` 필터 DSL, `A` 토글, 상태바 카운트 |
+| v1.8.0 | Phase 9b.1–9b.2 | `anomaly:*` 필터 DSL + `A` 토글 |
+| v1.9.0 (예정) | Phase 9b.3 | gutter 마커 + 상태바 카운트 (렌더 레이어 변경 + 골든 갱신) |
 
 ## 진행 상태 (2026-04-19)
 
@@ -358,7 +359,9 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 | 7 | ✅ | `logsee --export-anomalies` JSONL |
 | 8 | ✅ | `logsee mcp` JSON-RPC 2.0 stdio — 4 tools |
 | 9 (plumbing) | ✅ | Model.classifier + `FindingAt`/`FindingCount` — 렌더 미변경 |
-| 9b | ⏳ | gutter 마커, `anomaly:*` 필터 DSL, `A` 토글, 상태바 카운트 |
+| 9b.1 | ✅ | `anomaly:any` / `anomaly:<kind>` 필터 DSL (`MatchContext`) |
+| 9b.2 | ✅ | `A` 토글(anomaly-only view). 상태바 카운트는 별도 슬라이스 |
+| 9b.3 | ⏳ | 줄 gutter의 severity 마커 + 상태바 카운트 — 렌더 레이어 변경으로 골든 테스트 대규모 업데이트 필요. 독립 슬라이스 (9b.3) 으로 분리 |
 | 10 | ✅ | README "AI-assisted analysis" 섹션 + `examples/mcp-claude.md` |
 
 ## 리스크
