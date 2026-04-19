@@ -291,11 +291,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				fallbackRow := 0
 				if msg.Direction > 0 {
-					top := m.cursorSeq - int64(vh-1)
-					if top < 1 {
-						top = 1
+					// viewTopSeq must be the Seq of the record (vh-1) filtered
+					// rows above the cursor, not `cursorSeq - (vh-1)` in raw
+					// file-line space. When a filter is active (e.g. level:D),
+					// fidx is sparser than the file line numbering, so raw-seq
+					// arithmetic undercounts the distance and parks the cursor
+					// in the middle of the viewport instead of the bottom row.
+					topIdx := m.cursorIdx - (vh - 1)
+					if topIdx < 0 {
+						topIdx = 0
 					}
-					m.viewTopSeq = top
+					m.viewTopSeq = m.buf.At(fidx[topIdx]).Seq
 					fallbackRow = vh - 1
 				} else {
 					m.viewTopSeq = m.cursorSeq
