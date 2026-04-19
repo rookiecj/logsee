@@ -25,9 +25,10 @@ const ConfigHelp = `Configuration (TOML):
     [log_type] probe_lines — non-empty lines to sample when default is "auto" (>= 1).
     [log_type.patterns] — regexes: bracket_head, adb_head_time, adb_head_threadtime
       (used to score line formats and extract Android single-letter levels; first capture group where relevant).
+    [history] dir — directory for filter/highlight MRU (state.json); empty = $HOME/.local/logsee.
     [highlight_color_names] — optional; name → "0".."255" for highlight queries like token#name.
       Built-in names are always available; config overrides the same key.
-    --print-default-config: full commented TOML (Korean) for [log_type], patterns, and highlight_color_names.`
+    --print-default-config: full commented TOML (Korean) for [log_type], patterns, [history], and highlight_color_names.`
 
 type LogTypeConfig struct {
 	Default    string               `toml:"default"`
@@ -35,8 +36,15 @@ type LogTypeConfig struct {
 	Patterns   filter.PatternConfig `toml:"patterns"`
 }
 
+// HistoryConfig configures filter/highlight MRU persistence (state.json).
+// Dir empty means use userstate.DefaultStateDir() ($HOME/.local/logsee).
+type HistoryConfig struct {
+	Dir string `toml:"dir"`
+}
+
 type Config struct {
 	LogType             LogTypeConfig     `toml:"log_type"`
+	History             HistoryConfig     `toml:"history"`
 	HighlightColorNames map[string]string `toml:"highlight_color_names"`
 }
 
@@ -47,6 +55,7 @@ func Default() Config {
 			ProbeLines: 32,
 			Patterns:   filter.DefaultPatternConfig(),
 		},
+		History:             HistoryConfig{Dir: ""},
 		HighlightColorNames: cloneStringMap(BuiltinHighlightColorNames()),
 	}
 }
@@ -81,6 +90,7 @@ const defaultConfigHeader = `# logsee configuration (TOML)
 # 구성 요약:
 #   [log_type]          — 줄 형식·프로브(레벨 태그 추출 / auto 판별)
 #   [log_type.patterns] — 형식별 정규식(adb는 한 글자 레벨, bracket은 태그 식별자 등)
+#   [history]           — 필터/하이라이트 MRU(state.json) 저장 디렉터리
 #   [highlight_color_names] — 하이라이트에서 #이름 으로 쓸 ANSI 256 색 이름
 #
 
@@ -115,6 +125,19 @@ func defaultLogTypeTOML() string {
 	fmt.Fprintf(&b, "bracket_head = %q\n", p.BracketHead)
 	fmt.Fprintf(&b, "adb_head_time = %q\n", p.AndroidHeadTime)
 	fmt.Fprintf(&b, "adb_head_threadtime = %q\n", p.AndroidHeadThreadtime)
+	return b.String()
+}
+
+// defaultHistoryTOML returns [history] with Korean comments. Dir empty means $HOME/.local/logsee.
+func defaultHistoryTOML() string {
+	var b strings.Builder
+	b.WriteString("\n# --- [history] 필터/하이라이트 MRU 저장 위치 ---\n")
+	b.WriteString("# dir — state.json을 둘 디렉터리. 비어 있으면 $HOME/.local/logsee 를 사용한다.\n")
+	b.WriteString("#       디렉터리가 없으면 저장 시 자동 생성한다.\n")
+	b.WriteString("#\n")
+	b.WriteString("[history]\n")
+	b.WriteString(`dir = ""  # 예: "/Users/me/.logsee" — 기본값(빈 문자열) 사용을 권장`)
+	b.WriteByte('\n')
 	return b.String()
 }
 
@@ -154,7 +177,7 @@ func defaultHighlightColorNamesTOML() string {
 // DefaultConfigTOML returns the default config file text: header, [log_type] + patterns, [highlight_color_names],
 // all with Korean comments and values matching Default().
 func DefaultConfigTOML() (string, error) {
-	return defaultConfigHeader + defaultLogTypeTOML() + defaultHighlightColorNamesTOML(), nil
+	return defaultConfigHeader + defaultLogTypeTOML() + defaultHistoryTOML() + defaultHighlightColorNamesTOML(), nil
 }
 
 func Load(path string) (Config, error) {
@@ -195,6 +218,9 @@ func merge(dst *Config, src Config) {
 	}
 	if src.LogType.Patterns.AndroidHeadThreadtime != "" {
 		dst.LogType.Patterns.AndroidHeadThreadtime = src.LogType.Patterns.AndroidHeadThreadtime
+	}
+	if strings.TrimSpace(src.History.Dir) != "" {
+		dst.History.Dir = strings.TrimSpace(src.History.Dir)
 	}
 	if len(src.HighlightColorNames) > 0 {
 		if dst.HighlightColorNames == nil {

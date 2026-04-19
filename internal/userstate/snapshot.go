@@ -13,7 +13,7 @@ const (
 	// SnapshotVersion is bumped when the JSON shape changes.
 	SnapshotVersion = 1
 	// MaxHistoryEntries caps each MRU list length.
-	MaxHistoryEntries = 50
+	MaxHistoryEntries = 10
 )
 
 // EmptySnapshot returns a zero snapshot with a valid version field.

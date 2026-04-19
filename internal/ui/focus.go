@@ -144,8 +144,9 @@ func (m *Model) handleKeyHighlightEditor(msg tea.KeyMsg, fidx []int, vh int) (te
 	return m, nil
 }
 
-// remapVimNavKeysForLogList maps h/j/k/l to arrows, G to End, n/p to Ctrl+n/Ctrl+p (match nav)
-// so tryBrowseKey matches ↑↓←→/End/next-prev-hit. Only used on FocusLogList so filter/highlight
+// remapVimNavKeysForLogList maps h/j/k/l to arrows, J/K to Shift+↓/↑ (range selection),
+// G to End, n/p to Ctrl+n/Ctrl+p (match nav) so tryBrowseKey matches
+// ↑↓←→/Shift+↑↓/End/next-prev-hit. Only used on FocusLogList so filter/highlight
 // compose can still type these runes (PRD §6.).
 func remapVimNavKeysForLogList(msg tea.KeyMsg) tea.KeyMsg {
 	switch msg.String() {
@@ -153,6 +154,10 @@ func remapVimNavKeysForLogList(msg tea.KeyMsg) tea.KeyMsg {
 		return tea.KeyMsg{Type: tea.KeyUp}
 	case "j":
 		return tea.KeyMsg{Type: tea.KeyDown}
+	case "K":
+		return tea.KeyMsg{Type: tea.KeyShiftUp}
+	case "J":
+		return tea.KeyMsg{Type: tea.KeyShiftDown}
 	case "h":
 		return tea.KeyMsg{Type: tea.KeyLeft}
 	case "l":
@@ -196,17 +201,16 @@ func (m *Model) handleKeyLogList(msg tea.KeyMsg, fidx []int, vh int) (tea.Model,
 		m.syncFilterCursorEnd()
 		m.filterErr = ""
 		return m, nil
+	case "tab", "ctrl+i":
+		// Tab and Ctrl+I share the 0x09 keycode in terminals; toggle the sequence column.
+		m.noLineNumbers = !m.noLineNumbers
+		m.syncScrollToCursor(fidx)
+		return m, nil
 	case "/":
 		m.searchCompose = true
 		m.searchDraft = m.searchBuf
 		m.searchCaret = len([]rune(m.searchDraft))
 		m.syncScrollToCursor(fidx)
-		return m, nil
-	case "esc":
-		m.searchBuf = ""
-		m.searchDraft = ""
-		m.searchCompose = false
-		m.searchCaret = 0
 		return m, nil
 	default:
 		return m, nil

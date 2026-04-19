@@ -84,7 +84,7 @@ func TestFilterSyntaxHelp_F1FromFilterInput(t *testing.T) {
 	}
 }
 
-func TestHelpDialog_qQuitsWhenHelpOpen(t *testing.T) {
+func TestHelpDialog_qSwallowedWhenHelpOpen_ctrlCStillQuits(t *testing.T) {
 	// Given: help open
 	r := buffer.NewRing(3)
 	var tm tea.Model = NewModel(r, nil, false, false, "", "stdin", "", nil, nil, nil)
@@ -93,13 +93,20 @@ func TestHelpDialog_qQuitsWhenHelpOpen(t *testing.T) {
 	m.height = 10
 	tm, _ = tm.Update(tea.KeyMsg{Type: tea.KeyF1})
 
-	// When: q
+	// When: q while help open — should be swallowed, help stays, no quit
 	var cmd tea.Cmd
 	tm, cmd = tm.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	_ = tm.(*Model)
-	// Then: quit command
+	m2 := tm.(*Model)
+	if cmd != nil {
+		t.Fatal("q should not quit while help is open")
+	}
+	if !m2.helpOpen {
+		t.Fatal("help should remain open after q")
+	}
+	// When: Ctrl+C — still quits from within the help dialog
+	_, cmd = tm.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
 	if cmd == nil {
-		t.Fatal("expected quit cmd")
+		t.Fatal("Ctrl+C should still quit with help open")
 	}
 	if msg := cmd(); msg == nil {
 		t.Fatal("expected cmd to send a message")

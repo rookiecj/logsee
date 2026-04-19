@@ -9,6 +9,7 @@
 # 구성 요약:
 #   [log_type]          — 줄 형식·프로브(레벨 태그 추출 / auto 판별)
 #   [log_type.patterns] — 형식별 정규식(adb는 한 글자 레벨, bracket은 태그 식별자 등)
+#   [history]           — 필터/하이라이트 MRU(state.json) 저장 디렉터리
 #   [highlight_color_names] — 하이라이트에서 #이름 으로 쓸 ANSI 256 색 이름
 #
 
@@ -35,6 +36,13 @@ probe_lines = 32  # auto 프로브 시 상단에서 읽는 줄 수
 bracket_head = "^\\[[^\\]]+\\]\\s+([A-Za-z][A-Za-z0-9_]*)\\s*:"
 adb_head_time = "^\\d{4}-\\d{2}-\\d{2}\\s+\\d{1,2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\d+-\\d+\\s+\\S+\\s+\\S+\\s+([VDIWEF])\\s"
 adb_head_threadtime = "^\\d{2}-\\d{2}\\s+\\d{1,2}:\\d{2}:\\d{2}\\.\\d{3}\\s+\\d+\\s+\\d+\\s+([VDIWEF])\\s+\\S+:"
+
+# --- [history] 필터/하이라이트 MRU 저장 위치 ---
+# dir — state.json을 둘 디렉터리. 비어 있으면 $HOME/.local/logsee 를 사용한다.
+#       디렉터리가 없으면 저장 시 자동 생성한다.
+#
+[history]
+dir = ""  # 예: "/Users/me/.logsee" — 기본값(빈 문자열) 사용을 권장
 
 # --- highlight_color_names: 하이라이트에서 #이름 으로 쓰는 ANSI 256 색(0–255) ---
 # TUI에서 / 로 검색(highlight) 확정 시: needle#숫자 또는 needle#이름 (토큰 규칙은 필터와 동일).

@@ -55,8 +55,8 @@ logsee [flags] [input-file]
 - **`--no-line-numbers`**: 시퀀스(줄번호) 컬럼 숨김
 - **`--sync-interval`**: `>0`이면 해당 주기로 출력 파일 `fsync` (예: `1s`)
 - **`--stdin-batch-ms`**: 입력 줄을 UI 업데이트 단위로 묶기(0이면 줄마다 즉시 반영)
-- **`--state-dir`**: 필터/하이라이트 MRU 저장 디렉터리(기본: `$HOME/.local/logsee`, 파일명 `state.json`)
 - **`--config`**: 로그 타입/패턴 설정 파일 경로(기본: `$HOME/.local/logsee/config.toml`). **`--print-default-config`**: 내장 기본값과 동일한 주석 포함 TOML을 stdout에 출력
+- 필터/하이라이트 MRU 저장 디렉터리는 `config.toml`의 **`[history] dir`** 로 지정합니다(비워두면 `$HOME/.local/logsee`, 파일명 `state.json`).
 - **`--log-type`**: `level:` 태그용 줄 형태 — `auto`(기본), `plain`, `adb` (상태바 `type:`에 표시)
 - **`--log-type-probe-lines`**: `auto`일 때 샘플로 볼 비어 있지 않은 줄 수(기본 32)
 
@@ -64,7 +64,7 @@ logsee [flags] [input-file]
 
 ## Keymap (핵심만)
 
-- **종료**: `q`, `Ctrl+C`
+- **종료**: **로그 목록 화면에서 `q` 또는 `Ctrl+Q`**, 또는 어디서나 `Ctrl+C` (필터·하이라이트 입력 중에는 `q`가 문자로 들어가고, `Ctrl+Q`·도움말에서는 소비됨)
 - **도움말**: `F1` (인앱 도움말 + 버전). **로그 목록**에서만 `?`도 동일하게 열림 (IDE/터미널이 `F1`을 가로챌 때)
 - **목록 이동**: 방향키 · **로그 목록 화면에서만** `h` `j` `k` `l` (`←` `↓` `↑` `→` 와 동일) · **`G`** (마지막 줄, `End` 와 동일; 필터·검색 입력 중에는 해당 글자로 입력)
 - **필터 입력**: `Enter` 또는 `:`
@@ -72,6 +72,7 @@ logsee [flags] [input-file]
 - **다음/이전 매칭 줄 이동**: `n` / `p` (로그 목록, 하이라이트 확정 시) · `Ctrl+n` / `Ctrl+p` (동일 동작·필터 입력 중 매칭 이동에 사용)
 - **북마크**: `m` (현재 줄 토글/할당), `1`–`9` (슬롯 점프)
 - **줄 줄바꿈(wrap) 토글**: `Ctrl+W`
+- **줄 번호 컬럼 토글**: `Ctrl+I` (= `Tab`) — 로그 목록 화면에서만; CLI `--no-line-numbers`의 런타임 대응
 
 상세 키맵/예외 규칙은 [`docs/plans/stdio-log-viewer-prd.md`](docs/plans/stdio-log-viewer-prd.md) 기준입니다.
 

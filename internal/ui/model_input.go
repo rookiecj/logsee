@@ -338,8 +338,14 @@ func (m *Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Clear previous one-shot feedback; handlers (e.g. `c` copy) may set a new message this tick.
 	m.copyFlash = ""
 
-	switch msg.String() {
-	case "ctrl+c", "q":
+	// Ctrl+C always quits. 'q' and 'Ctrl+Q' only quit when focus is the log list
+	// and no modal layer is active — in filter or highlight compose 'q' is a literal
+	// rune, and the help dialog, history overlay, or search-scan confirm swallow
+	// both keys.
+	if msg.String() == "ctrl+c" {
+		return m, tea.Quit
+	}
+	if (msg.String() == "q" || msg.String() == "ctrl+q") && !m.helpOpen && m.histKind == histNone && !m.searchScanConfirmOpen && m.keyFocus() == FocusLogList {
 		return m, tea.Quit
 	}
 

@@ -14,8 +14,8 @@ func step(m *Model, msg tea.Msg) *Model {
 	return next.(*Model)
 }
 
-func TestModel_filterMode_esc_doesNotClearFilter_clearsSearch(t *testing.T) {
-	// Given: applied filter and committed search (PRD §6.6: Esc does not touch filter)
+func TestModel_filterMode_esc_preservesFilterAndHighlight(t *testing.T) {
+	// Given: applied filter and committed highlight search, no selection (PRD §6.6)
 	r := buffer.NewRing(100)
 	m := NewModel(r, nil, false, false, "", "stdin", "", nil, nil, nil)
 	m.width, m.height = 80, 24
@@ -28,22 +28,22 @@ func TestModel_filterMode_esc_doesNotClearFilter_clearsSearch(t *testing.T) {
 	}
 	m.searchBuf = "world"
 	m.searchDraft = m.searchBuf
-	// When: Esc with no selection
+	// When: Esc on log list with no selection and no compose
 	m = step(m, tea.KeyMsg(tea.Key{Type: tea.KeyEsc}))
-	// Then: filter unchanged, search cleared
+	// Then: both filter and highlight survive — Esc no longer clears searchBuf (PRD §6.6 step 3 removed)
 	if m.appliedFilter == "" || m.prog.Empty() {
 		t.Fatalf("expected filter still applied, applied=%q empty=%v", m.appliedFilter, m.prog.Empty())
 	}
-	if m.searchBuf != "" || m.searchDraft != "" {
-		t.Fatalf("expected search cleared, buf=%q draft=%q", m.searchBuf, m.searchDraft)
+	if m.searchBuf != "world" || m.searchDraft != "world" {
+		t.Fatalf("expected search preserved, buf=%q draft=%q", m.searchBuf, m.searchDraft)
 	}
 	if len(m.filteredIndices()) >= 3 {
 		t.Fatalf("expected filtered list still shorter than 3, got %d", len(m.filteredIndices()))
 	}
 }
 
-func TestModel_filterMode_esc_clearsSelectionThenSearch_notFilter(t *testing.T) {
-	// Given: applied filter, range selection, and committed search
+func TestModel_filterMode_esc_clearsSelectionOnly_preservesRest(t *testing.T) {
+	// Given: applied filter, range selection, and committed highlight search
 	r := buffer.NewRing(100)
 	m := NewModel(r, nil, false, false, "", "stdin", "", nil, nil, nil)
 	m.width, m.height = 80, 24
@@ -55,9 +55,8 @@ func TestModel_filterMode_esc_clearsSelectionThenSearch_notFilter(t *testing.T) 
 	m.cursorIdx = 1
 	m.searchBuf = "x2"
 	m.searchDraft = m.searchBuf
-	// When: Esc — selection first
+	// When: first Esc — selection drops, filter and highlight untouched
 	m = step(m, tea.KeyMsg(tea.Key{Type: tea.KeyEsc}))
-	// Then: selection cleared, filter and search unchanged
 	if m.selAnchor >= 0 {
 		t.Fatal("expected selection cleared")
 	}
@@ -67,13 +66,13 @@ func TestModel_filterMode_esc_clearsSelectionThenSearch_notFilter(t *testing.T) 
 	if m.searchBuf != "x2" {
 		t.Fatalf("expected search unchanged after first esc, got %q", m.searchBuf)
 	}
-	// When: Esc again — search clear, filter still on
+	// When: second Esc — now a no-op on the log list (highlight is no longer cleared by Esc)
 	m = step(m, tea.KeyMsg(tea.Key{Type: tea.KeyEsc}))
 	if m.appliedFilter == "" {
 		t.Fatal("expected filter still applied after second esc")
 	}
-	if m.searchBuf != "" {
-		t.Fatalf("expected search cleared on second esc, got %q", m.searchBuf)
+	if m.searchBuf != "x2" {
+		t.Fatalf("expected highlight preserved on second esc, got %q", m.searchBuf)
 	}
 }
 

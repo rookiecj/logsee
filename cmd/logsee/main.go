@@ -58,7 +58,6 @@ func main() {
 	syncInterval := flag.Duration("sync-interval", 0, "if >0, fsync the output file on this interval (e.g. 1s)")
 	outMaxBytes := flag.Int("out-max-bytes", 0, "rotate --out when the flushed file plus the next line would exceed this size (bytes); 0 disables rotation (default, single growing file)")
 	stdinBatchMS := flag.Int("stdin-batch-ms", 40, "coalesce input lines (stdin or file) for UI updates (0 = send each line immediately)")
-	stateDir := flag.String("state-dir", "", "directory for filter/highlight MRU (state.json); default is $HOME/.local/logsee")
 	configPathFlag := flag.String("config", "", "path to config.toml (default: $HOME/.local/logsee/config.toml)")
 	printDefaultConfig := flag.Bool("print-default-config", false, "print a commented TOML file with built-in defaults to stdout and exit (same as missing config file)")
 	logTypeStr := &trackedStringFlag{}
@@ -185,8 +184,8 @@ func main() {
 
 	statePath := ""
 	var snap userstate.Snapshot
-	if strings.TrimSpace(*stateDir) != "" {
-		statePath = userstate.StateFilePath(filepath.Clean(strings.TrimSpace(*stateDir)))
+	if strings.TrimSpace(cfg.History.Dir) != "" {
+		statePath = userstate.StateFilePath(filepath.Clean(strings.TrimSpace(cfg.History.Dir)))
 	} else {
 		d, derr := userstate.DefaultStateDir()
 		if derr != nil {
