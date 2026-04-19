@@ -116,3 +116,73 @@ func TestFilterNavDown_CursorStaysOnBottomRowWhenFilterSparse(t *testing.T) {
 		t.Errorf("cursor landed on non-match text %q", rec.Text)
 	}
 }
+
+// TestSearchNavNext_CursorStaysOnBottomRowWhenFilterSparse reproduces the
+// user's follow-up report: with a filter like `level:D` and a highlight
+// query committed, continuous `n` (next highlight hit) lands the cursor
+// mid-viewport after a disk-scan jump.
+//
+// Pre-fix: cmdLoadFileWindowAroundBottom set viewTopSeq = globalLine -
+// (vh-1) in raw file-line Seq space. applyFileWindowLoaded then fed
+// that to syncIdxFromSeq, which — because fidx is sparser than Seq
+// space under a filter — resolved the seq to an idx just a few
+// filtered rows above the cursor, anchoring the viewport top too high
+// and leaving the cursor in the middle.
+//
+// Post-fix: applyFileWindowLoaded re-anchors viewTopSeq through fidx
+// when preferBottom is set.
+func TestSearchNavNext_CursorStaysOnBottomRowWhenFilterSparse(t *testing.T) {
+	m := newFilePartialModelForSeq(t)
+	vh := m.viewportH()
+	if vh < 4 {
+		t.Fatalf("vh too small for scenario: %d", vh)
+	}
+
+	p, err := filter.Parse("match")
+	if err != nil {
+		t.Fatalf("parse filter: %v", err)
+	}
+	m.prog = p
+	m.appliedFilter = "match"
+
+	// 1..900 records, every 3rd is a filtered-in "match". Dense enough
+	// that one viewport of matches occupies >> vh file lines, so raw-seq
+	// arithmetic and fidx arithmetic diverge sharply.
+	const density = 3
+	const total = 900
+	recs := make([]domain.Line, 0, total)
+	for s := int64(1); s <= total; s++ {
+		text := "other " + strconv.FormatInt(s, 10)
+		if s%density == 0 {
+			text = "match " + strconv.FormatInt(s, 10)
+		}
+		recs = append(recs, domain.Line{Seq: s, Text: text})
+	}
+	m.fileOffsets = make([]int64, 10_000)
+	m.fileTotalLines = 10_000
+
+	// Simulate SearchScanResult arriving with a found seq deep in the
+	// file: the handler invokes cmdLoadFileWindowAroundBottom, which
+	// pins cursor to that seq on the viewport's bottom row.
+	const foundSeq = int64(600) // must be a match (600 % 3 == 0)
+	m.cursorSeq = foundSeq
+	top := foundSeq - int64(vh-1)
+	if top < 1 {
+		top = 1
+	}
+	m.viewTopSeq = top
+
+	// Window load result arrives: applyFileWindowLoaded merges and
+	// resolves scroll state from the cursor/view anchors.
+	m.applyFileWindowLoaded(recs, 1)
+
+	fidx := m.filteredIndices()
+	row := m.cursorIdx - m.scrollTop
+	if row != vh-1 {
+		t.Errorf("cursor row after search nav-next disk load: got %d, want %d (bottom) — cursorIdx=%d scrollTop=%d fidxLen=%d",
+			row, vh-1, m.cursorIdx, m.scrollTop, len(fidx))
+	}
+	if m.buf.At(fidx[m.cursorIdx]).Seq != foundSeq {
+		t.Errorf("cursor should land on foundSeq=%d, got %d", foundSeq, m.buf.At(fidx[m.cursorIdx]).Seq)
+	}
+}

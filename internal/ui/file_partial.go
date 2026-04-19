@@ -132,6 +132,25 @@ func (m *Model) applyFileWindowLoaded(recs []domain.Line, firstLine int64) {
 		}
 	}
 
+	// Re-anchor viewTopSeq through fidx when bottom-pinning. Callers set
+	// viewTopSeq = cursorSeq - (vh-1) in *file-line* Seq space; with a
+	// filter dropping lines, that seq resolves to a filtered index far
+	// closer to the cursor than vh-1 rows, and syncIdxFromSeq's
+	// "viewTopSeq hit" branch drops the cursor mid-viewport. Recomputing
+	// the top-row anchor over fidx keeps the cursor on the bottom row
+	// regardless of filter density.
+	if preferBottom && len(fidx) > 0 {
+		cIdx := m.findSeqInFidx(fidx, m.cursorSeq)
+		if cIdx < 0 {
+			cIdx = len(fidx) - 1
+		}
+		topIdx := cIdx - (vh - 1)
+		if topIdx < 0 {
+			topIdx = 0
+		}
+		m.viewTopSeq = m.buf.At(fidx[topIdx]).Seq
+	}
+
 	m.syncIdxFromSeq(fidx, fallbackRow)
 	m.clampSelectionToBuffer(fidx)
 
