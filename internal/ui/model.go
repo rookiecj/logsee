@@ -156,6 +156,11 @@ type Model struct {
 	// NewModel; it is stateless and cheap enough that always-on costs
 	// nothing measurable on the stdin path.
 	classifier *classify.Classifier
+	// anomalyOnly is the `A` toggle: when true, the filtered view drops
+	// any line without a finding, regardless of the current filter
+	// program. Equivalent to appending `anomaly:any` to the filter, but
+	// without modifying user-typed filter state.
+	anomalyOnly bool
 }
 
 // HistoryOpts configures persisted filter/highlight MRU (PRD §3·§6.4.1). StateFile is full path to state.json; empty disables disk load/save.

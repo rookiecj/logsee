@@ -80,7 +80,11 @@ func (m *Model) oldestRingLines() []string {
 	return out
 }
 
-// filteredIndices is PRD §8.0 layer 1: ring row indices that pass prog (all rows when prog is empty).
+// filteredIndices is PRD §8.0 layer 1: ring row indices that pass prog
+// (all rows when prog is empty). When m.anomalyOnly is set (A toggle),
+// lines without a classifier finding are additionally dropped. The
+// findings map feeds MatchContext so `anomaly:*` tags resolve on the
+// same pass.
 func (m *Model) filteredIndices() []int {
 	if m.buf == nil {
 		return nil
@@ -90,9 +94,19 @@ func (m *Model) filteredIndices() []int {
 	out := make([]int, 0, n)
 	for i := 0; i < n; i++ {
 		rec := m.buf.At(i)
-		if filter.Match(rec.Text, m.prog, m.ignoreCase, fmt) {
-			out = append(out, i)
+		ctx := filter.MatchContext{Seq: rec.Seq}
+		if m.findings != nil {
+			if k, ok := m.findings[rec.Seq]; ok {
+				ctx.Finding = k.String()
+			}
 		}
+		if !filter.MatchWithContext(rec.Text, ctx, m.prog, m.ignoreCase, fmt) {
+			continue
+		}
+		if m.anomalyOnly && ctx.Finding == "" {
+			continue
+		}
+		out = append(out, i)
 	}
 	return out
 }

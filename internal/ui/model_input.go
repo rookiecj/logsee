@@ -158,6 +158,15 @@ func (m *Model) trySearchComposeKey(msg tea.KeyMsg, fidx []int) bool {
 // It returns false for keys that should fall through to filter-draft editing, search-buffer editing, or other handlers.
 func (m *Model) tryBrowseKey(msg tea.KeyMsg, fidx []int, vh int) (bool, tea.Cmd) {
 	switch msg.String() {
+	case "A":
+		// Quick toggle for "anomalies-only view". Equivalent to
+		// sandwiching `anomaly:any` into the filter, but keeps the
+		// user-typed filter string intact.
+		m.anomalyOnly = !m.anomalyOnly
+		fidx2 := m.filteredIndices()
+		m.clampSelectionToBuffer(fidx2)
+		m.syncScrollToCursor(fidx2)
+		return true, nil
 	case "shift+up":
 		m.navVertical(fidx, -1, true)
 		return true, nil
