@@ -400,6 +400,7 @@ func (m *Model) applyIncomingLines(texts []string) {
 		if rotated && rsp != nil {
 			rsp.NoteRotation(seq)
 		}
+		m.classifyIncoming(seq, text)
 	}
 	if rsp != nil && m.store != nil {
 		if err := rsp.RefreshIndex(m.store.Size()); err != nil {

@@ -5,8 +5,10 @@ import (
 	"os"
 	"strings"
 
+	"git.inpt.fr/42dottools/log/internal/analysis/classify"
 	"git.inpt.fr/42dottools/log/internal/buffer"
 	"git.inpt.fr/42dottools/log/internal/config"
+	"git.inpt.fr/42dottools/log/internal/domain"
 	"git.inpt.fr/42dottools/log/internal/filter"
 	"git.inpt.fr/42dottools/log/internal/storage"
 	"git.inpt.fr/42dottools/log/internal/userstate"
@@ -143,6 +145,17 @@ type Model struct {
 	highlightNames  map[string]string
 	hlNeedlesKey    string
 	hlNeedlesCached []HighlightNeedle
+
+	// findings records the first Tier A anomaly kind detected on each
+	// Seq as lines arrive (stdin path only; file-partial mode skips
+	// applyIncomingLines and relies on `logsee --export-anomalies` or
+	// the MCP server). Populated unconditionally so visualization work
+	// in a later phase can rely on the data being there.
+	findings map[int64]domain.FindingKind
+	// classifier runs once per incoming line. Created unconditionally in
+	// NewModel; it is stateless and cheap enough that always-on costs
+	// nothing measurable on the stdin path.
+	classifier *classify.Classifier
 }
 
 // HistoryOpts configures persisted filter/highlight MRU (PRD §3·§6.4.1). StateFile is full path to state.json; empty disables disk load/save.
@@ -224,8 +237,22 @@ func NewModel(buf *buffer.Ring, store *storage.LineAppender, ignoreCase, noLineN
 		effectiveLogFmt:   effFmt,
 		logFormatResolved: effResolved,
 		highlightNames:    config.MergeHighlightColorNames(highlightColorNames),
+		findings:          make(map[int64]domain.FindingKind),
+		classifier:        classify.New(),
 	}
 }
+
+// FindingAt returns the classifier's first Tier A detection for the line
+// at seq, or (0, false) when nothing was flagged. Used by the analysis
+// view wiring in later phases; exposed publicly so tests and external
+// visualizers can inspect without reaching into the Model.
+func (m *Model) FindingAt(seq int64) (domain.FindingKind, bool) {
+	k, ok := m.findings[seq]
+	return k, ok
+}
+
+// FindingCount returns how many distinct Seqs currently carry a finding.
+func (m *Model) FindingCount() int { return len(m.findings) }
 
 // SetWindowProvider installs the random-access provider for the current input source. Called
 // once at startup for the stdin path (with a [RingStreamProvider]); the file path installs its
