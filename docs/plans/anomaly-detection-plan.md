@@ -5,7 +5,7 @@
 ## Why
 
 설계 문서에 요약. 핵심 요구:
-1. AI 보조 분석(Android adb 이상탐지)이 가능해야 한다 — headless JSON + MCP.
+1. AI 보조 분석(Android adb 이상탐지)이 가능해야 한다 — headless JSONL.
 2. 신규 로직이 `Model`(101 edges)에 붙지 않도록 분석 레이어를 분리한다.
 3. 새 규칙/파서/출력 추가 시 **한 인터페이스만** 만지도록 확장 지점을 단일화한다.
 
@@ -16,7 +16,6 @@ in-scope:
 - Tier A 규칙(ANR/FATAL/tombstone/LMK/Watchdog 등) 분류기
 - 블록 파서(native crash, Java FATAL, ANR)
 - headless JSON export
-- MCP stdio 서버 최소 tool 3종
 
 out-of-scope (v2 이후):
 - Drain 템플릿 마이닝
@@ -267,30 +266,12 @@ Classifier Analyzer 구동. 3개 샘플에서 기대 Finding 생성.
 
 ---
 
-## Phase 8 · MCP stdio 서버
+## Phase 8 · MCP stdio 서버 (취소)
 
-**목표**: `logsee mcp` 서브커맨드. Claude Code가 tool로 호출.
-
-### 작업
-
-1. `cmd/logsee/main.go`에 서브커맨드 `mcp`
-2. `internal/view/mcp/server.go` — stdio MCP 서버 (JSON-RPC 2.0)
-3. Tools:
-   - `load_session(path)` — 파일 분석, session_id 반환
-   - `list_anomalies(session_id, kinds?)` — Finding 배열
-   - `get_event(session_id, span_id)` — 블록 전체 라인 + summary
-   - `summarize_pid(session_id, pid)` — 해당 PID의 Findings + 시간순
-4. 통합 테스트: stdio에 요청 쓰고 응답 파싱
-
-### Deliverable
-
-Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서버.
-
-### Acceptance
-
-- `load_session` 후 `list_anomalies`가 Phase 7 JSONL과 동치
-- `get_event` 반환 라인이 `Span.Start..End` 범위 내
-- 동시 세션 3개 이상 유지
+당초 `logsee mcp` 서브커맨드로 JSON-RPC 2.0 stdio MCP 서버를 제공했으나,
+`--export-anomalies` JSONL 경로가 LLM 파이프라인 연결에 충분하다는 판단으로
+v1.7.x 시점에 코드/문서 모두 제거함. 필요 시 과거 커밋(`7210444`, revert in
+later chore commit)에서 복구 가능.
 
 ---
 
@@ -326,10 +307,9 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 
 ### 작업
 
-1. `README.md` — AI analysis 섹션 (MCP 설정 예, `--export-anomalies` 예)
+1. `README.md` — AI analysis 섹션 (`--export-anomalies` 예)
 2. `docs/architecture/anomaly-detection.md` — 오픈 이슈 업데이트
 3. `docs/plans/anomaly-detection-plan.md` — 본 문서 완료 체크
-4. 예제: `examples/mcp-claude.md` — Claude Code에서 logsee mcp 사용 시나리오
 
 ---
 
@@ -340,7 +320,7 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 | v1.3.0 | Phase 0–4 | 내부 코어. 외부 변화 없음 |
 | v1.4.0 | Phase 5–6 | `logsee-ana` 실험 binary |
 | v1.5.0 | Phase 7 | `--export-anomalies` 정식 |
-| v1.6.0 | Phase 8 | MCP 서버 |
+| v1.6.0 | (건너뜀) | Phase 8(MCP)은 제거 |
 | v1.7.0 | Phase 9(plumbing)–10 | TUI 훅 + README/예제 |
 | v1.8.0 | Phase 9b.1–9b.2 | `anomaly:*` 필터 DSL + `A` 토글 |
 | v1.9.0 (예정) | Phase 9b.3 | gutter 마커 + 상태바 카운트 (렌더 레이어 변경 + 골든 갱신) |
@@ -357,12 +337,12 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 | 5 | ✅ | `block.NewNativeCrash / NewJavaFatal / NewANR` |
 | 6 | ✅ | `source.FileSource`/`ReaderSource` + `pipeline.Pipeline` + `cmd/logsee-ana` |
 | 7 | ✅ | `logsee --export-anomalies` JSONL |
-| 8 | ✅ | `logsee mcp` JSON-RPC 2.0 stdio — 4 tools |
+| 8 | ❌ | 제거(`--export-anomalies` 로 충분) |
 | 9 (plumbing) | ✅ | Model.classifier + `FindingAt`/`FindingCount` — 렌더 미변경 |
 | 9b.1 | ✅ | `anomaly:any` / `anomaly:<kind>` 필터 DSL (`MatchContext`) |
 | 9b.2 | ✅ | `A` 토글(anomaly-only view). 상태바 카운트는 별도 슬라이스 |
 | 9b.3 | ⏳ | 줄 gutter의 severity 마커 + 상태바 카운트 — 렌더 레이어 변경으로 골든 테스트 대규모 업데이트 필요. 독립 슬라이스 (9b.3) 으로 분리 |
-| 10 | ✅ | README "AI-assisted analysis" 섹션 + `examples/mcp-claude.md` |
+| 10 | ✅ | README "AI-assisted analysis" 섹션 (`--export-anomalies` 예) |
 
 ## 리스크
 
@@ -371,7 +351,6 @@ Claude Code `.claude/settings.json`에 등록해 실제 호출 가능한 MCP 서
 | Android 포맷 다양성(OEM 패치)으로 regex 깨짐 | Phase 4 규칙 TOML 외부화 예비. `testdata/android/` 샘플 누적 |
 | Analyzer 백프레셔로 lag 누적 | Metrics + status bar 노출. Phase 6 벤치에서 drop 발생률 측정 |
 | `Model` 책임 분리 실패 시 Phase 9 통합 폭발 | Phase 9 시작 전 `Model` 순수 상태 추출 spike(1일) 선행 |
-| MCP tool 설계 미스매치 | Phase 8 착수 전 Claude Code에서 요구되는 실제 시나리오 1회 dry-run |
 | Seq 단조성 깨짐(멀티 소스) | v1은 단일 소스만. 멀티 소스는 v2 별도 설계 |
 
 ## 오픈 이슈 → 결정 필요

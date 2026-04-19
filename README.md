@@ -94,7 +94,7 @@ logsee [flags] [input-file]
 ## AI-assisted analysis
 
 `logsee`는 TUI 뷰어 외에 **헤드리스 이상탐지(anomaly detection)** 경로를 제공합니다.
-Android adb system 로그에서 ANR · native tombstone · Java FATAL 같은 이벤트를 Tier A 규칙과 블록 파서로 찾아내고, LLM agent가 바로 먹을 수 있는 JSON / MCP 형식으로 내놓습니다.
+Android adb system 로그에서 ANR · native tombstone · Java FATAL 같은 이벤트를 Tier A 규칙과 블록 파서로 찾아내고, LLM agent가 바로 먹을 수 있는 JSONL 형식으로 내놓습니다.
 
 ### `--export-anomalies` (headless JSONL)
 
@@ -122,35 +122,7 @@ adb logcat -v threadtime | ./bin/logsee --export-anomalies -
                         "summary":"ANR in com.example.app (com.example.app/.MainActivity)","schema_version":1}}
 ```
 
-### `logsee mcp` (Model Context Protocol, stdio)
-
-Claude Code 같은 MCP 클라이언트가 직접 호출할 수 있는 JSON-RPC 2.0 서버입니다.
-제공 도구:
-
-| tool | 용도 |
-|---|---|
-| `load_session(path)` | 파일을 파이프라인에 태우고 `session_id` 반환 |
-| `list_anomalies(session_id, kinds?)` | 감지된 Finding + Span 배열 |
-| `get_event(session_id, span_id)` | Span에 해당하는 전체 라인 + 요약 |
-| `summarize_pid(session_id, pid)` | 특정 PID 관련 Finding + Span |
-
-`~/.claude/settings.json` 에 등록:
-
-```jsonc
-{
-  "mcpServers": {
-    "logsee": {
-      "command": "/absolute/path/to/logsee",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-등록 후 Claude Code에서 자연어로 호출 가능: _"`/path/to/adb.log` 열어서 ANR 리포트 확인해줘"_ 등.
-
 자세한 설계·구현 단계는 [`docs/architecture/anomaly-detection.md`](docs/architecture/anomaly-detection.md) 와 [`docs/plans/anomaly-detection-plan.md`](docs/plans/anomaly-detection-plan.md) 를 참고하세요.
-예제 Claude Code 시나리오는 [`examples/mcp-claude.md`](examples/mcp-claude.md).
 
 ## Dev
 
