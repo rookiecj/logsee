@@ -1,0 +1,10 @@
+logs/
+bin/
+docs/
+AGENTS.md
+CLAUDE.md
+PROGRESS.md
+PLAN.md
+.agents/
+.codex/
+
