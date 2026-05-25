@@ -50,6 +50,8 @@ func TestTeaKeyToLoopInputMapsShiftArrowsToRangeSelection(t *testing.T) {
 	}{
 		{name: "shift-up", key: tea.KeyShiftUp, want: loopEventShiftUp},
 		{name: "shift-down", key: tea.KeyShiftDown, want: loopEventShiftDown},
+		{name: "left", key: tea.KeyLeft, want: loopEventHorizontalLeft},
+		{name: "right", key: tea.KeyRight, want: loopEventHorizontalRight},
 	}
 
 	for _, tt := range tests {
@@ -68,7 +70,7 @@ func TestTeaLoopModelShowsFilterChromeWhileEditing(t *testing.T) {
 		Mode:    usecase.InputModeFile,
 		SOTPath: logPath,
 	}
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 120, 5, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 120, 5, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -76,14 +78,32 @@ func TestTeaLoopModelShowsFilterChromeWhileEditing(t *testing.T) {
 
 	updated, _ := model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{':'}}))
 	model = updated.(teaLoopModel)
-	if got := model.View(); !strings.Contains(got, "FILTER INPUT  │  > _") {
+	if got := model.View(); !strings.Contains(got, "FILTER INPUT(':')  │  > _") {
 		t.Fatalf("view after ':' = %q, want visible empty filter editing chrome", got)
 	}
 
 	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{'e'}}))
 	model = updated.(teaLoopModel)
-	if got := model.View(); !strings.Contains(got, "FILTER INPUT  │  > e_") {
+	if got := model.View(); !strings.Contains(got, "FILTER INPUT(':')  │  > e_") {
 		t.Fatalf("view after filter text = %q, want visible draft filter chrome", got)
+	}
+
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{'r'}}))
+	model = updated.(teaLoopModel)
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{'r'}}))
+	model = updated.(teaLoopModel)
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{'o'}}))
+	model = updated.(teaLoopModel)
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{'r'}}))
+	model = updated.(teaLoopModel)
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyLeft}))
+	model = updated.(teaLoopModel)
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyLeft}))
+	model = updated.(teaLoopModel)
+	updated, _ = model.Update(tea.KeyMsg(tea.Key{Type: tea.KeyRunes, Runes: []rune{'z'}}))
+	model = updated.(teaLoopModel)
+	if got := model.View(); !strings.Contains(got, "FILTER INPUT(':')  │  > errz_or") {
+		t.Fatalf("view after cursor move and insert = %q, want errz_or editing chrome", got)
 	}
 }
 
@@ -93,7 +113,7 @@ func TestTeaLoopModelClearsCopyMessageAfterExpiry(t *testing.T) {
 		Mode:    usecase.InputModeFile,
 		SOTPath: logPath,
 	}
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 200, 5, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 200, 5, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -122,7 +142,7 @@ func TestTeaLoopModelClearsNoMatchMessageAfterExpiry(t *testing.T) {
 		Mode:    usecase.InputModeFile,
 		SOTPath: logPath,
 	}
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 200, 5, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 200, 5, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -151,7 +171,7 @@ func TestTeaLoopModelFullHeightViewDoesNotEndWithNewline(t *testing.T) {
 		Mode:    usecase.InputModeFile,
 		SOTPath: logPath,
 	}
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 80, 5, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 80, 5, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -159,8 +179,8 @@ func TestTeaLoopModelFullHeightViewDoesNotEndWithNewline(t *testing.T) {
 
 	got := model.View()
 	for _, want := range []string{
-		"FILTER INPUT  │  ∅",
-		"SEARCH INPUT  │  ∅",
+		"FILTER INPUT(':')  │  ∅",
+		"SEARCH INPUT('/')  │  ∅",
 		"1",
 		"2",
 		"lines:",

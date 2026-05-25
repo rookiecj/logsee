@@ -30,6 +30,7 @@ const (
 type HighlightRange struct {
 	Start int
 	End   int
+	Color string
 }
 
 type SearchState struct {
@@ -40,7 +41,7 @@ type SearchState struct {
 }
 
 type SearchMatcher struct {
-	tokens []string
+	tokens []SearchToken
 }
 
 type HighlightedOutputLogRecord struct {
@@ -106,13 +107,26 @@ func TokenizeSearch(input string) []string {
 		if input == "" {
 			return nil
 		}
-		return []string{input}
+		text, _ := parseSearchColorSuffix(input)
+		return []string{text}
 	}
-	return tokens
+	texts := make([]string, 0, len(tokens))
+	for _, token := range tokens {
+		texts = append(texts, token.Text)
+	}
+	return texts
 }
 
 func NewSearchMatcher(input string) SearchMatcher {
-	return SearchMatcher{tokens: TokenizeSearch(input)}
+	tokens, ok := tokenizeSearch(input)
+	if !ok {
+		if input == "" {
+			return SearchMatcher{}
+		}
+		text, color := parseSearchColorSuffix(input)
+		return SearchMatcher{tokens: []SearchToken{{Text: text, Color: color}}}
+	}
+	return SearchMatcher{tokens: tokens}
 }
 
 func (m SearchMatcher) Match(line string) bool {
@@ -122,18 +136,19 @@ func (m SearchMatcher) Match(line string) bool {
 func (m SearchMatcher) HighlightRanges(line string) []HighlightRange {
 	var ranges []HighlightRange
 	for _, token := range m.tokens {
-		if token == "" {
+		if token.Text == "" {
 			continue
 		}
-		for start := 0; start <= len(line)-len(token); {
-			index := strings.Index(line[start:], token)
+		for start := 0; start <= len(line)-len(token.Text); {
+			index := strings.Index(line[start:], token.Text)
 			if index < 0 {
 				break
 			}
 			matchStart := start + index
 			ranges = append(ranges, HighlightRange{
 				Start: matchStart,
-				End:   matchStart + len(token),
+				End:   matchStart + len(token.Text),
+				Color: token.Color,
 			})
 			start = matchStart + 1
 		}
@@ -199,8 +214,8 @@ func (s *NavigationState) MoveToSearchMatchWithSelection(records []OutputLogReco
 	return moved
 }
 
-func tokenizeSearch(input string) ([]string, bool) {
-	var tokens []string
+func tokenizeSearch(input string) ([]SearchToken, bool) {
+	var tokens []SearchToken
 	for i := 0; i < len(input); {
 		for i < len(input) && isSearchSpace(input[i]) {
 			i++
@@ -214,8 +229,9 @@ func tokenizeSearch(input string) ([]string, bool) {
 			if !ok {
 				return nil, false
 			}
+			token, next, color := consumeSearchColorSuffix(input, next, token)
 			if token != "" {
-				tokens = append(tokens, token)
+				tokens = append(tokens, SearchToken{Text: token, Color: color})
 			}
 			i = next
 			continue
@@ -228,8 +244,9 @@ func tokenizeSearch(input string) ([]string, bool) {
 			}
 			i++
 		}
-		if token := input[start:i]; token != "" {
-			tokens = append(tokens, token)
+		if raw := input[start:i]; raw != "" {
+			text, color := parseSearchColorSuffix(raw)
+			tokens = append(tokens, SearchToken{Text: text, Color: color})
 		}
 	}
 	return tokens, true
@@ -259,7 +276,7 @@ func mergeHighlightRanges(ranges []HighlightRange) []HighlightRange {
 	merged := []HighlightRange{ranges[0]}
 	for _, current := range ranges[1:] {
 		last := &merged[len(merged)-1]
-		if current.Start <= last.End {
+		if current.Color == last.Color && current.Start <= last.End {
 			if current.End > last.End {
 				last.End = current.End
 			}

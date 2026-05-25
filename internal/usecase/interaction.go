@@ -96,7 +96,7 @@ func (s *InteractionState) HandleRune(r rune) {
 func (s *InteractionState) HandleKey(key InteractionKey) {
 	if s.helpOpen {
 		switch key {
-		case InteractionKeyHelpF1, InteractionKeyEsc:
+		case InteractionKeyHelpF1, InteractionKeyHelpQuestion, InteractionKeyEsc:
 			s.helpOpen = false
 		}
 		return
@@ -105,6 +105,10 @@ func (s *InteractionState) HandleKey(key InteractionKey) {
 	switch key {
 	case InteractionKeyHelpF1:
 		s.helpOpen = true
+	case InteractionKeyHelpQuestion:
+		if s.focus == InteractionFocusLogList {
+			s.helpOpen = true
+		}
 	case InteractionKeyEsc:
 		if s.focus == InteractionFocusLogList {
 			s.selection.Clear()

@@ -6,16 +6,16 @@ import (
 	"os/exec"
 )
 
-type XclipWriter struct {
+type PbcopyWriter struct {
 	Command string
 }
 
-func (w XclipWriter) WriteText(ctx context.Context, text string) error {
+func (w PbcopyWriter) WriteText(ctx context.Context, text string) error {
 	command := w.Command
 	if command == "" {
-		command = "xclip"
+		command = "pbcopy"
 	}
-	cmd := exec.CommandContext(ctx, command, "-selection", "clipboard")
+	cmd := exec.CommandContext(ctx, command)
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return fmt.Errorf("open clipboard stdin: %w", err)

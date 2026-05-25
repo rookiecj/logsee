@@ -1,3 +1,4 @@
+.DS_Store
 logs/
 bin/
 docs/
@@ -7,4 +8,6 @@ PROGRESS.md
 PLAN.md
 .agents/
 .codex/
+.cursor/
+logsee-*.log
 

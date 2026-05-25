@@ -58,8 +58,8 @@ type loopInput struct {
 	text  string
 }
 
-func runInteractiveLoop(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int, keyInput io.Reader, output io.Writer, stream *stdioStream, clipboardWriter port.ClipboardWriter) error {
-	state, err := newLoopState(ctx, session, sourcePath, logType, width, height, unboundedRecordLimit)
+func runInteractiveLoop(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int, keyInput io.Reader, output io.Writer, stream *stdioStream, clipboardWriter port.ClipboardWriter, homeDir string) error {
+	state, err := newLoopState(ctx, session, sourcePath, logType, width, height, unboundedRecordLimit, homeDir)
 	if err != nil {
 		return err
 	}
@@ -211,9 +211,24 @@ func (s *loopState) handleInput(ctx context.Context, input loopInput) (bool, boo
 		case loopEventHelpToggle, loopEventEsc:
 			s.helpOpen = false
 			return true, false
+		case loopEventText:
+			if input.text == "?" {
+				s.helpOpen = false
+				return true, false
+			}
+			return false, false
 		default:
+			if s.handleHelpScroll(input) {
+				return true, false
+			}
 			return false, false
 		}
+	}
+	if s.historyPickerOpen {
+		if s.handleHistoryPicker(input) {
+			return true, false
+		}
+		return false, false
 	}
 
 	switch s.focus {
@@ -230,28 +245,46 @@ func (s *loopState) handleFilterInput(input loopInput) bool {
 	switch input.event {
 	case loopEventEnter:
 		return s.applyFilterEditingText()
+	case loopEventQuit:
+		s.filterEditingText, s.filterCursor = insertTextAtCursor(s.filterEditingText, s.filterCursor, input.text)
+		s.filterError = ""
 	case loopEventEsc:
 		s.filterEditingText = s.filterText
+		s.filterCursor = runeCount(s.filterEditingText)
 		s.filterError = ""
 		s.focus = loopFocusLogList
 	case loopEventDown:
 		if input.text != "" {
 			s.filterEditingText += input.text
+			s.filterCursor = runeCount(s.filterEditingText)
 			s.filterError = ""
 			return true
 		}
-		s.searchEditingText = s.searchText
-		s.focus = loopFocusSearchInput
+		s.openFilterHistoryPicker()
+	case loopEventHorizontalLeft:
+		if input.text != "" {
+			s.filterEditingText, s.filterCursor = insertTextAtCursor(s.filterEditingText, s.filterCursor, input.text)
+			s.filterError = ""
+			return true
+		}
+		s.filterCursor = moveTextCursorLeft(s.filterEditingText, s.filterCursor)
+	case loopEventHorizontalRight:
+		if input.text != "" {
+			s.filterEditingText, s.filterCursor = insertTextAtCursor(s.filterEditingText, s.filterCursor, input.text)
+			s.filterError = ""
+			return true
+		}
+		s.filterCursor = moveTextCursorRight(s.filterEditingText, s.filterCursor)
 	case loopEventHelpToggle:
-		s.helpOpen = true
+		s.openHelp()
 	case loopEventBackspace:
-		s.filterEditingText = dropLastRune(s.filterEditingText)
+		s.filterEditingText, s.filterCursor = deleteRuneBeforeCursor(s.filterEditingText, s.filterCursor)
 		s.filterError = ""
 	default:
 		if input.text == "" {
 			return false
 		}
-		s.filterEditingText += input.text
+		s.filterEditingText, s.filterCursor = insertTextAtCursor(s.filterEditingText, s.filterCursor, input.text)
 		s.filterError = ""
 	}
 	return true
@@ -261,32 +294,50 @@ func (s *loopState) handleSearchInput(input loopInput) bool {
 	switch input.event {
 	case loopEventEnter:
 		return s.applySearchEditingText()
+	case loopEventQuit:
+		s.searchEditingText, s.searchCursor = insertTextAtCursor(s.searchEditingText, s.searchCursor, input.text)
 	case loopEventEsc:
 		s.searchEditingText = s.searchText
+		s.searchCursor = runeCount(s.searchEditingText)
 		s.focus = loopFocusLogList
 	case loopEventUp:
 		if input.text != "" {
 			s.searchEditingText += input.text
+			s.searchCursor = runeCount(s.searchEditingText)
 			return true
 		}
 		s.filterEditingText = s.filterText
+		s.filterCursor = runeCount(s.filterEditingText)
 		s.filterError = ""
 		s.focus = loopFocusFilterInput
 	case loopEventDown:
 		if input.text != "" {
 			s.searchEditingText += input.text
+			s.searchCursor = runeCount(s.searchEditingText)
 			return true
 		}
-		s.focus = loopFocusLogList
+		s.openSearchHistoryPicker()
+	case loopEventHorizontalLeft:
+		if input.text != "" {
+			s.searchEditingText, s.searchCursor = insertTextAtCursor(s.searchEditingText, s.searchCursor, input.text)
+			return true
+		}
+		s.searchCursor = moveTextCursorLeft(s.searchEditingText, s.searchCursor)
+	case loopEventHorizontalRight:
+		if input.text != "" {
+			s.searchEditingText, s.searchCursor = insertTextAtCursor(s.searchEditingText, s.searchCursor, input.text)
+			return true
+		}
+		s.searchCursor = moveTextCursorRight(s.searchEditingText, s.searchCursor)
 	case loopEventHelpToggle:
-		s.helpOpen = true
+		s.openHelp()
 	case loopEventBackspace:
-		s.searchEditingText = dropLastRune(s.searchEditingText)
+		s.searchEditingText, s.searchCursor = deleteRuneBeforeCursor(s.searchEditingText, s.searchCursor)
 	default:
 		if input.text == "" {
 			return false
 		}
-		s.searchEditingText += input.text
+		s.searchEditingText, s.searchCursor = insertTextAtCursor(s.searchEditingText, s.searchCursor, input.text)
 	}
 	return true
 }
@@ -316,14 +367,20 @@ func (s *loopState) handleLogListInput(ctx context.Context, input loopInput) (bo
 	case loopEventBookmarkToggle:
 		s.bookmarks.ToggleRawLine(s.cursorRawLine())
 	case loopEventHelpToggle:
-		s.helpOpen = true
+		s.openHelp()
+	case loopEventText:
+		if input.text == "?" {
+			s.openHelp()
+		}
 	case loopEventFilterInput:
 		s.clearSelectionMode()
 		s.filterEditingText = s.filterText
+		s.filterCursor = runeCount(s.filterEditingText)
 		s.filterError = ""
 		s.focus = loopFocusFilterInput
 	case loopEventSearchInput:
 		s.searchEditingText = s.searchText
+		s.searchCursor = runeCount(s.searchEditingText)
 		s.focus = loopFocusSearchInput
 	case loopEventSearchNext:
 		return s.moveToSearchMatchOrReportBoundary(ctx, usecase.SearchDirectionNext), false
@@ -393,6 +450,48 @@ func (s *loopState) removeMode(mode loopMode) {
 		}
 	}
 	s.modeStack = next
+}
+
+func (s *loopState) openHelp() {
+	s.helpOpen = true
+	s.helpScrollOffset = 0
+}
+
+func (s *loopState) handleHelpScroll(input loopInput) bool {
+	step := 1
+	page := tui.HelpContentHeight(s.listHeight)
+	if page < 1 {
+		page = 1
+	}
+	switch input.event {
+	case loopEventDown:
+		s.scrollHelp(step)
+	case loopEventUp:
+		s.scrollHelp(-step)
+	case loopEventPageDown:
+		s.scrollHelp(page)
+	case loopEventPageUp:
+		s.scrollHelp(-page)
+	case loopEventHome:
+		s.helpScrollOffset = 0
+	case loopEventEnd:
+		s.helpScrollOffset = tui.HelpMaxScrollOffset(s.listHeight)
+	default:
+		return false
+	}
+	return true
+}
+
+func (s *loopState) scrollHelp(delta int) {
+	maxOffset := tui.HelpMaxScrollOffset(s.listHeight)
+	next := s.helpScrollOffset + delta
+	if next < 0 {
+		next = 0
+	}
+	if next > maxOffset {
+		next = maxOffset
+	}
+	s.helpScrollOffset = next
 }
 
 func (s *loopState) popMode() bool {
@@ -654,6 +753,8 @@ func namedLoopEvent(token string) loopEvent {
 		return loopEventUp
 	case "<Down>":
 		return loopEventDown
+	case "<Enter>":
+		return loopEventEnter
 	case "<ShiftUp>":
 		return loopEventShiftUp
 	case "<ShiftDown>":
@@ -666,6 +767,10 @@ func namedLoopEvent(token string) loopEvent {
 		return loopEventHome
 	case "<End>":
 		return loopEventEnd
+	case "<Left>":
+		return loopEventHorizontalLeft
+	case "<Right>":
+		return loopEventHorizontalRight
 	default:
 		return loopEventUnknown
 	}

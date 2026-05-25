@@ -57,6 +57,65 @@ func TestSearchInputUpAndDownMoveFocusWithoutApplyingEdit(t *testing.T) {
 	}
 }
 
+func TestTokenizeSearchParsesColorSuffixOnTokens(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{
+			name:  "unquoted color suffix",
+			input: "error#red timeout#green",
+			want:  []string{"error", "timeout"},
+		},
+		{
+			name:  "quoted token with trailing color suffix",
+			input: `timeout "over speed"#yellow db`,
+			want:  []string{"timeout", "over speed", "db"},
+		},
+		{
+			name:  "unknown suffix stays literal",
+			input: "issue#123",
+			want:  []string{"issue#123"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := TokenizeSearch(tt.input)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("tokens = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewSearchMatcherAssignsPerTokenHighlightColors(t *testing.T) {
+	matcher := NewSearchMatcher("foo#red bar#green")
+
+	got := matcher.HighlightRanges("foo bar")
+	want := []HighlightRange{
+		{Start: 0, End: 3, Color: "red"},
+		{Start: 4, End: 7, Color: "green"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("highlight ranges = %#v, want %#v", got, want)
+	}
+}
+
+func TestSearchHighlightRangesMergeOverlapsOnlyForSameColor(t *testing.T) {
+	matcher := NewSearchMatcher("error err")
+
+	got := matcher.HighlightRanges("error err ERROR")
+	want := []HighlightRange{
+		{Start: 0, End: 5},
+		{Start: 6, End: 9},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("highlight ranges = %#v, want %#v", got, want)
+	}
+}
+
 func TestTokenizeSearchSupportsWhitespaceQuotesAndMalformedQuoteFallback(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -87,19 +146,6 @@ func TestTokenizeSearchSupportsWhitespaceQuotesAndMalformedQuoteFallback(t *test
 				t.Fatalf("tokens = %#v, want %#v", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestSearchHighlightRangesFindAllPartialMatchesAndMergeOverlaps(t *testing.T) {
-	matcher := NewSearchMatcher("error err")
-
-	got := matcher.HighlightRanges("error err ERROR")
-	want := []HighlightRange{
-		{Start: 0, End: 5},
-		{Start: 6, End: 9},
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("highlight ranges = %#v, want %#v", got, want)
 	}
 }
 

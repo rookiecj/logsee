@@ -367,10 +367,11 @@ func TestHelpModalOpensFromEachFocusWithoutMutatingState(t *testing.T) {
 	}
 }
 
-func TestHelpModalClosesWithEscOrF1WithoutMutatingState(t *testing.T) {
+func TestHelpModalClosesWithEscF1OrQuestionWithoutMutatingState(t *testing.T) {
 	for _, key := range []InteractionKey{
 		InteractionKeyEsc,
 		InteractionKeyHelpF1,
+		InteractionKeyHelpQuestion,
 	} {
 		t.Run(key.String(), func(t *testing.T) {
 			app := NewInteractionState()
@@ -393,9 +394,24 @@ func TestHelpModalClosesWithEscOrF1WithoutMutatingState(t *testing.T) {
 	}
 }
 
-func TestQuestionMarkIsNotAHelpKey(t *testing.T) {
+func TestQuestionMarkOpensHelpFromLogListOnly(t *testing.T) {
+	t.Run("log-list", func(t *testing.T) {
+		app := NewInteractionState()
+		app.SetFocus(InteractionFocusLogList)
+		app.SetCursorRawLine(42)
+		before := app.Snapshot()
+
+		app.HandleKey(InteractionKeyHelpQuestion)
+
+		if !app.HelpOpen() {
+			t.Fatal("? did not open help from log list")
+		}
+		if after := app.Snapshot(); !reflect.DeepEqual(after, before) {
+			t.Fatalf("state changed after help open: before %#v after %#v", before, after)
+		}
+	})
+
 	for _, focus := range []InteractionFocus{
-		InteractionFocusLogList,
 		InteractionFocusFilterInput,
 		InteractionFocusSearchInput,
 	} {
@@ -404,41 +420,17 @@ func TestQuestionMarkIsNotAHelpKey(t *testing.T) {
 			app.SetFocus(focus)
 			app.SetFilterEditingText("level:ERROR")
 			app.SetSearchEditingText("timeout")
-			app.SetCursorRawLine(42)
-			app.Selection().StartOrUpdateRange(40, 42)
-			app.Selection().TogglePicked(7)
 			before := app.Snapshot()
 
 			app.HandleKey(InteractionKeyHelpQuestion)
 
 			if app.HelpOpen() {
-				t.Fatal("? opened help")
+				t.Fatal("? opened help from input focus")
 			}
 			if after := app.Snapshot(); !reflect.DeepEqual(after, before) {
 				t.Fatalf("state changed after question key: before %#v after %#v", before, after)
 			}
 		})
-	}
-}
-
-func TestQuestionMarkDoesNotCloseOpenHelp(t *testing.T) {
-	app := NewInteractionState()
-	app.SetFocus(InteractionFocusSearchInput)
-	app.SetFilterEditingText("level:ERROR")
-	app.SetSearchEditingText("timeout")
-	app.SetCursorRawLine(42)
-	app.Selection().StartOrUpdateRange(40, 42)
-	app.Selection().TogglePicked(7)
-	app.HandleKey(InteractionKeyHelpF1)
-	before := app.Snapshot()
-
-	app.HandleKey(InteractionKeyHelpQuestion)
-
-	if !app.HelpOpen() {
-		t.Fatal("? closed open help")
-	}
-	if after := app.Snapshot(); !reflect.DeepEqual(after, before) {
-		t.Fatalf("state changed after question key while help open: before %#v after %#v", before, after)
 	}
 }
 

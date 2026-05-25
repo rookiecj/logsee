@@ -34,8 +34,8 @@ type teaLoopModel struct {
 	err        error
 }
 
-func runBubbleTeaLoop(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int, keyInput io.Reader, output io.Writer, stream *stdioStream, clipboardWriter port.ClipboardWriter) error {
-	state, err := newLoopState(ctx, session, sourcePath, logType, width, height, unboundedRecordLimit)
+func runBubbleTeaLoop(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int, keyInput io.Reader, output io.Writer, stream *stdioStream, clipboardWriter port.ClipboardWriter, homeDir string) error {
+	state, err := newLoopState(ctx, session, sourcePath, logType, width, height, unboundedRecordLimit, homeDir)
 	if err != nil {
 		return err
 	}
@@ -211,6 +211,10 @@ func teaKeyToLoopInput(msg tea.KeyMsg) loopInput {
 		return eventLoopInput(loopEventHome)
 	case tea.KeyEnd:
 		return eventLoopInput(loopEventEnd)
+	case tea.KeyLeft:
+		return eventLoopInput(loopEventHorizontalLeft)
+	case tea.KeyRight:
+		return eventLoopInput(loopEventHorizontalRight)
 	case tea.KeyF1:
 		return eventLoopInput(loopEventHelpToggle)
 	case tea.KeyCtrlN:

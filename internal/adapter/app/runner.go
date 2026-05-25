@@ -100,15 +100,15 @@ func Run(ctx context.Context, options cli.Options, stdin io.Reader, stdout io.Wr
 		}
 		clipboardWriter := runOptions.Clipboard
 		if clipboardWriter == nil {
-			clipboardWriter = clipboardadapter.XclipWriter{}
+			clipboardWriter = clipboardadapter.DefaultWriter()
 		}
 		if runOptions.UseBubbleTea {
-			return runBubbleTeaLoop(ctx, session, sourcePath, logType, width, height, keyInput, stdout, stream, clipboardWriter)
+			return runBubbleTeaLoop(ctx, session, sourcePath, logType, width, height, keyInput, stdout, stream, clipboardWriter, homeDir)
 		}
-		return runInteractiveLoop(ctx, session, sourcePath, logType, width, height, keyInput, stdout, stream, clipboardWriter)
+		return runInteractiveLoop(ctx, session, sourcePath, logType, width, height, keyInput, stdout, stream, clipboardWriter, homeDir)
 	}
 
-	frame, err := buildInitialFrame(ctx, session, sourcePath, logType, width, height)
+	frame, err := buildInitialFrame(ctx, session, sourcePath, logType, width, height, homeDir)
 	if err != nil {
 		return err
 	}
@@ -207,15 +207,15 @@ func resolveSessionLogType(ctx context.Context, session usecase.InputSession, op
 	return logType, nil
 }
 
-func buildInitialFrame(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int) (tui.Frame, error) {
-	state, err := newLoopState(ctx, session, sourcePath, logType, width, height, height-3)
+func buildInitialFrame(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int, homeDir string) (tui.Frame, error) {
+	state, err := newLoopState(ctx, session, sourcePath, logType, width, height, height-3, homeDir)
 	if err != nil {
 		return tui.Frame{}, err
 	}
 	return state.renderFrame(), nil
 }
 
-func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height, recordLimit int) (*loopState, error) {
+func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height, recordLimit int, homeDir string) (*loopState, error) {
 	listHeight := height - 3
 	if listHeight < 0 {
 		listHeight = 0
@@ -264,10 +264,11 @@ func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath 
 	if err != nil {
 		return nil, err
 	}
-	return &loopState{
+	state := &loopState{
 		width:         width,
 		height:        height,
 		listHeight:    listHeight,
+		homeDir:       homeDir,
 		sourcePath:    sourcePath,
 		recordLimit:   recordLimit,
 		session:       session,
@@ -281,7 +282,11 @@ func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath 
 		navigation:    nav,
 		bookmarks:     usecase.NewBookmarkState(),
 		selection:     usecase.NewSelectionState(),
-	}, nil
+	}
+	if err := state.loadPersistedInputHistory(); err != nil {
+		return nil, err
+	}
+	return state, nil
 }
 
 type loopFocus int
@@ -321,9 +326,11 @@ type loopState struct {
 
 	filterText        string
 	filterEditingText string
+	filterCursor      int
 	filterError       string
 	searchText        string
 	searchEditingText string
+	searchCursor      int
 	focus             loopFocus
 	modeStack         []loopMode
 
@@ -331,8 +338,16 @@ type loopState struct {
 	bookmarks        *usecase.BookmarkState
 	selection        *usecase.SelectionState
 	clipboard        port.ClipboardWriter
-	helpOpen         bool
-	wrap             bool
+	homeDir              string
+	inputHistoryPath     string
+	inputHistory         usecase.InputHistorySnapshot
+	historyPickerOpen    bool
+	historyPickerFilter  bool
+	historyPickerIndex   int
+	historyPickerScroll  int
+	helpOpen             bool
+	helpScrollOffset     int
+	wrap                 bool
 	horizontalOffset int
 
 	readState               tui.ReadState
@@ -351,7 +366,13 @@ func (s *loopState) renderFrame() tui.Frame {
 		Filter:           s.filterInputModel(),
 		Search:           s.searchInputModel(),
 		Logs:             logs,
-		HelpOpen:         s.helpOpen,
+		HelpOpen:                  s.helpOpen,
+		HelpScrollOffset:          s.helpScrollOffset,
+		HistoryPickerOpen:         s.historyPickerOpen,
+		HistoryPickerTitle:        s.historyPickerTitle(),
+		HistoryPickerItems:        s.historyPickerItems(),
+		HistoryPickerIndex:        s.historyPickerIndex,
+		HistoryPickerScrollOffset: s.historyPickerScroll,
 		Wrap:             s.wrap,
 		HorizontalOffset: s.horizontalOffset,
 		Status: tui.StatusModel{
@@ -377,9 +398,10 @@ func (s *loopState) renderFrame() tui.Frame {
 func (s *loopState) filterInputModel() tui.TextInputModel {
 	if s.focus == loopFocusFilterInput {
 		return tui.TextInputModel{
-			Text:    s.filterEditingText,
-			Error:   s.filterError,
-			Editing: true,
+			Text:      s.filterEditingText,
+			Error:     s.filterError,
+			Editing:   true,
+			CursorPos: s.filterCursor,
 		}
 	}
 	return tui.TextInputModel{Text: s.filterText}
@@ -387,7 +409,11 @@ func (s *loopState) filterInputModel() tui.TextInputModel {
 
 func (s *loopState) searchInputModel() tui.TextInputModel {
 	if s.focus == loopFocusSearchInput {
-		return tui.TextInputModel{Text: s.searchEditingText, Editing: true}
+		return tui.TextInputModel{
+			Text:      s.searchEditingText,
+			Editing:   true,
+			CursorPos: s.searchCursor,
+		}
 	}
 	return tui.TextInputModel{Text: s.searchText}
 }
@@ -501,6 +527,7 @@ func (s *loopState) applyFilterEditingText() bool {
 		s.resetNavigation()
 	}
 	s.focus = loopFocusLogList
+	s.recordFilterHistory()
 	return true
 }
 
@@ -538,6 +565,7 @@ func (s *loopState) applySearchEditingText() bool {
 		s.pushMode(loopModeSearch)
 	}
 	s.focus = loopFocusLogList
+	s.recordSearchHistory()
 	return true
 }
 

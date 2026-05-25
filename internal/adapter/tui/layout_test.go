@@ -127,8 +127,8 @@ func TestStyledFrameTextUsesLipglossStyles(t *testing.T) {
 	got := StyledFrameText(frame)
 	plain := stripANSI(got)
 	for _, want := range []string{
-		"FILTER INPUT  │  level:ERROR",
-		"SEARCH INPUT  │  timeout",
+		"FILTER INPUT(':')  │  level:ERROR",
+		"SEARCH INPUT('/')  │  timeout",
 		"7 1 timeout database",
 		"\x1b[",
 	} {
@@ -185,20 +185,22 @@ func TestStyledFrameTextRendersVisibleEditingChrome(t *testing.T) {
 		Width:  120,
 		Height: 5,
 		Filter: TextInputModel{
-			Text:    "level:ERROR",
-			Editing: true,
+			Text:      "level:ERROR",
+			Editing:   true,
+			CursorPos: 11,
 		},
 		Search: TextInputModel{
-			Text:    "timeout",
-			Editing: true,
+			Text:      "timeout",
+			Editing:   true,
+			CursorPos: 7,
 		},
 		Status: baseStatusModel(),
 	})
 
 	got := StyledFrameText(frame)
 	for _, want := range []string{
-		"FILTER INPUT  │  > level:ERROR_",
-		"SEARCH INPUT  │  > timeout_",
+		"FILTER INPUT(':')  │  > level:ERROR_",
+		"SEARCH INPUT('/')  │  > timeout_",
 		"38;5;254",
 		"48;5;25",
 	} {
@@ -224,17 +226,26 @@ func TestFrameTextRendersVisibleEmptyFilterEditingState(t *testing.T) {
 	}
 }
 
+func TestFormatEditingTextRendersCursorInMiddle(t *testing.T) {
+	got := formatEditingText("error", 3)
+	if got != "err_or" {
+		t.Fatalf("formatEditingText = %q, want err_or", got)
+	}
+}
+
 func TestFrameTextRendersEditingCursorAtEndOfInput(t *testing.T) {
 	frame := RenderFrame(RenderModel{
 		Width:  120,
 		Height: 5,
 		Filter: TextInputModel{
-			Text:    "level:ERROR",
-			Editing: true,
+			Text:      "level:ERROR",
+			Editing:   true,
+			CursorPos: 11,
 		},
 		Search: TextInputModel{
-			Text:    "timeout",
-			Editing: true,
+			Text:      "timeout",
+			Editing:   true,
+			CursorPos: 7,
 		},
 		Status: baseStatusModel(),
 	})
@@ -277,6 +288,32 @@ func TestStyledFrameTextKeepsInputChromeSingleLineUnderWidthPressure(t *testing.
 	}
 	if !strings.HasPrefix(lines[4], "lines:") {
 		t.Fatalf("bottom styled line = %q, want statusbar", lines[4])
+	}
+}
+
+func TestStyledFrameTextUsesPerSearchHighlightColors(t *testing.T) {
+	frame := RenderFrame(RenderModel{
+		Width:  120,
+		Height: 6,
+		Logs: []LogLineModel{
+			{
+				RawLineNumber: 1,
+				Text:          "error timeout",
+				Highlights: []usecase.HighlightRange{
+					{Start: 0, End: 5, Color: "red"},
+					{Start: 6, End: 13, Color: "green"},
+				},
+			},
+		},
+		Status: baseStatusModel(),
+	})
+
+	got := StyledFrameText(frame)
+	if !strings.Contains(got, "48;5;196") {
+		t.Fatalf("styled frame text %q must contain red highlight background", got)
+	}
+	if !strings.Contains(got, "48;5;34") {
+		t.Fatalf("styled frame text %q must contain green highlight background", got)
 	}
 }
 
@@ -727,6 +764,23 @@ func TestStyledFrameTextHighlightsCursorRowWhenWrapKeepsItVisible(t *testing.T) 
 	}
 }
 
+func TestLogLineNumberUsesFaintLowerContrastStyle(t *testing.T) {
+	line := styleLogLine(LogLineModel{RawLineNumber: 42, Text: "hello world"})
+	if !hasSGRParam(line, "2") {
+		t.Fatalf("log line %q must render line number with faint (lower contrast)", line)
+	}
+}
+
+func TestLogLineNumberStaysDimOnCursorRowWithoutGutterReverse(t *testing.T) {
+	line := styleLogLine(LogLineModel{RawLineNumber: 5, Text: "body", Cursor: true})
+	if !hasSGRParam(line, "2") {
+		t.Fatalf("cursor log line %q must keep faint gutter", line)
+	}
+	if !hasSGRParam(line, "7") {
+		t.Fatalf("cursor log line %q must reverse body for cursor row", line)
+	}
+}
+
 func TestLogRowsRenderRangeAndPickedSelectionIndicators(t *testing.T) {
 	frame := RenderFrame(RenderModel{
 		Width:  80,
@@ -816,54 +870,6 @@ func TestLogListCarriesSearchHighlightMetadata(t *testing.T) {
 	}
 	if !reflect.DeepEqual(list.Highlights, want) {
 		t.Fatalf("log list highlights = %#v, want %#v", list.Highlights, want)
-	}
-}
-
-func TestRenderFrameAddsHelpModalOverlayWhenOpen(t *testing.T) {
-	frame := RenderFrame(RenderModel{
-		Width:    80,
-		Height:   8,
-		HelpOpen: true,
-		Status:   baseStatusModel(),
-	})
-
-	help := findZone(t, frame, ZoneHelpModal)
-	if !help.Focusable {
-		t.Fatal("help modal must be focusable while open")
-	}
-	if !strings.Contains(strings.Join(help.Lines, "\n"), "Help") {
-		t.Fatalf("help modal lines = %#v, want title", help.Lines)
-	}
-}
-
-func TestHelpModalIncludesRequiredPRDSections(t *testing.T) {
-	frame := RenderFrame(RenderModel{
-		Width:    80,
-		Height:   20,
-		HelpOpen: true,
-		Status:   baseStatusModel(),
-	})
-
-	help := findZone(t, frame, ZoneHelpModal)
-	content := strings.Join(help.Lines, "\n")
-	for _, section := range []string{
-		"Movement",
-		"Follow mode",
-		"Filter input",
-		"Search input",
-		"Bookmarks",
-		"Wrap",
-		"Selection/copy",
-	} {
-		if !strings.Contains(content, section) {
-			t.Fatalf("help modal content missing section %q: %#v", section, help.Lines)
-		}
-	}
-	if !strings.Contains(content, "Esc/F1 close") {
-		t.Fatalf("help modal content missing close keys: %#v", help.Lines)
-	}
-	if strings.Contains(content, "Esc/F1/? close") {
-		t.Fatalf("help modal content advertises unsupported question key: %#v", help.Lines)
 	}
 }
 

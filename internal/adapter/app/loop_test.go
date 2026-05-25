@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"logsee/internal/adapter/cli"
+	"logsee/internal/adapter/config"
 	"logsee/internal/adapter/tui"
 	"logsee/internal/usecase"
 )
@@ -155,7 +156,7 @@ func TestLoopStateUsesViewportWindowForLargeUnfilteredFile(t *testing.T) {
 		SOTPath: logPath,
 	}
 
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -182,7 +183,7 @@ func TestLoopStateReloadsWindowAtTailWithoutRetainingAllRows(t *testing.T) {
 		SOTPath: logPath,
 	}
 
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -215,7 +216,7 @@ func TestLoopStateAppliesLargeFileFilterWithBoundedOutputCache(t *testing.T) {
 		SOTPath: logPath,
 	}
 
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -251,7 +252,7 @@ func TestLoopStateReloadsBoundedFilteredWindowAtTail(t *testing.T) {
 		SOTPath: logPath,
 	}
 
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -288,7 +289,7 @@ func TestLoopStateSkipsFilteredSOTRescanWhenViewportIsCached(t *testing.T) {
 		SOTPath: logPath,
 	}
 
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -314,7 +315,7 @@ func TestLoopStateClearingFilterReturnsToUnfilteredFileWindow(t *testing.T) {
 		SOTPath: logPath,
 	}
 
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -388,19 +389,42 @@ func TestInteractiveLoopHelpOpensAndClosesWithoutMovingCursor(t *testing.T) {
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "Help\n") {
-		t.Fatalf("output %q does not contain help modal", output)
+	if !containsHelpOverlay(output) {
+		t.Fatalf("output %q does not contain help overlay", output)
 	}
 	if strings.Count(output, "lines:1/2") < 3 {
 		t.Fatalf("cursor status should remain on line 1 across help open/close; output %q", output)
 	}
 }
 
-func TestInteractiveLoopQuestionMarkDoesNotOpenHelpFromLogList(t *testing.T) {
+func TestInteractiveLoopHelpScrollsInOverlayViewport(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("?"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("<F1>jjj<Esc>q"), &stdout, RunOptions{
+		Width:       80,
+		Height:      8,
+		HomeDir:     t.TempDir(),
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("run interactive: %v", err)
+	}
+
+	output := stdout.String()
+	if !strings.Contains(output, "j/k scroll") {
+		t.Fatalf("output %q does not contain help scroll status", output)
+	}
+	if strings.Count(output, "lines:1/2") < 2 {
+		t.Fatalf("cursor status should remain stable while scrolling help; output %q", output)
+	}
+}
+
+func TestInteractiveLoopQuestionMarkOpensHelpFromLogList(t *testing.T) {
+	logPath := writeLoopLog(t, "one\ntwo\n")
+
+	var stdout bytes.Buffer
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("?<End><Esc>q"), &stdout, RunOptions{
 		Width:       160,
 		Height:      12,
 		HomeDir:     t.TempDir(),
@@ -410,8 +434,15 @@ func TestInteractiveLoopQuestionMarkDoesNotOpenHelpFromLogList(t *testing.T) {
 		t.Fatalf("run interactive: %v", err)
 	}
 
-	if output := stdout.String(); strings.Contains(output, "Help\n") {
-		t.Fatalf("output %q unexpectedly contains help modal", output)
+	output := stdout.String()
+	if !containsHelpOverlay(output) {
+		t.Fatalf("output %q does not contain help overlay", output)
+	}
+	if !strings.Contains(output, "? from log list") {
+		t.Fatalf("output %q does not contain full help text", output)
+	}
+	if strings.Count(output, "lines:1/2") < 2 {
+		t.Fatalf("cursor status should remain on line 1 across help open/close; output %q", output)
 	}
 }
 
@@ -430,15 +461,15 @@ func TestInteractiveLoopFilterInputQuestionMarkIsTextAndF1OpensPopup(t *testing.
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "Help\n") {
-		t.Fatalf("output %q does not contain help modal", output)
+	if !containsHelpOverlay(output) {
+		t.Fatalf("output %q does not contain help overlay", output)
 	}
 	frame := lastRenderedFrame(output)
 	if !strings.Contains(frame, "filter:> ?_\n") {
 		t.Fatalf("final frame %q does not retain question mark in filter input", frame)
 	}
-	if strings.Contains(frame, "Help\n") {
-		t.Fatalf("final frame %q still contains help modal", frame)
+	if containsHelpOverlay(frame) {
+		t.Fatalf("final frame %q still contains help overlay", frame)
 	}
 }
 
@@ -457,16 +488,20 @@ func TestInteractiveLoopSearchInputQuestionMarkIsTextAndF1OpensPopup(t *testing.
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "Help\n") {
-		t.Fatalf("output %q does not contain help modal", output)
+	if !containsHelpOverlay(output) {
+		t.Fatalf("output %q does not contain help overlay", output)
 	}
 	frame := lastRenderedFrame(output)
 	if !strings.Contains(frame, "search:> ?_\n") {
 		t.Fatalf("final frame %q does not retain question mark in search input", frame)
 	}
-	if strings.Contains(frame, "Help\n") {
-		t.Fatalf("final frame %q still contains help modal", frame)
+	if containsHelpOverlay(frame) {
+		t.Fatalf("final frame %q still contains help overlay", frame)
 	}
+}
+
+func containsHelpOverlay(s string) bool {
+	return strings.Contains(s, "─ Help ─") || strings.Contains(s, "Movement:")
 }
 
 func TestInteractiveLoopRuntimeFilterAppliesOnEnter(t *testing.T) {
@@ -609,14 +644,15 @@ func TestInteractiveLoopSearchFocusRetainsAppliedValueWithCursorAtEnd(t *testing
 	}
 }
 
-func TestInteractiveLoopFilterDownSeedsSearchInputFromAppliedValue(t *testing.T) {
+func TestInteractiveLoopFilterDownOpensHistoryPicker(t *testing.T) {
 	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	home := t.TempDir()
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\n:<Down>"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":timeout\n:<Down>"), &stdout, RunOptions{
 		Width:       220,
 		Height:      8,
-		HomeDir:     t.TempDir(),
+		HomeDir:     home,
 		Interactive: true,
 	})
 	if err != nil {
@@ -624,8 +660,152 @@ func TestInteractiveLoopFilterDownSeedsSearchInputFromAppliedValue(t *testing.T)
 	}
 
 	frame := lastRenderedFrame(stdout.String())
-	if !strings.Contains(frame, "search:> timeout_\n") {
-		t.Fatalf("final frame %q does not seed search input from applied value after Down", frame)
+	if !strings.Contains(frame, "Filter history") {
+		t.Fatalf("final frame %q does not show filter history overlay", frame)
+	}
+	if !strings.Contains(frame, "> timeout") {
+		t.Fatalf("final frame %q does not highlight newest history entry", frame)
+	}
+}
+
+func TestInteractiveLoopHistoryPickerSelectFillsFilterInput(t *testing.T) {
+	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	home := t.TempDir()
+
+	var stdout bytes.Buffer
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":timeout\n:<Down><Enter>"), &stdout, RunOptions{
+		Width:       220,
+		Height:      8,
+		HomeDir:     home,
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("run interactive: %v", err)
+	}
+
+	frame := lastRenderedFrame(stdout.String())
+	if !strings.Contains(frame, "filter:> timeout_\n") {
+		t.Fatalf("final frame %q does not fill filter input from history selection", frame)
+	}
+}
+
+func TestInteractiveLoopSearchDownOpensHistoryPicker(t *testing.T) {
+	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	home := t.TempDir()
+
+	var stdout bytes.Buffer
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/ready\n/<Down>"), &stdout, RunOptions{
+		Width:       220,
+		Height:      8,
+		HomeDir:     home,
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("run interactive: %v", err)
+	}
+
+	frame := lastRenderedFrame(stdout.String())
+	if !strings.Contains(frame, "Search history") {
+		t.Fatalf("final frame %q does not show search history overlay", frame)
+	}
+	if !strings.Contains(frame, "> ready") {
+		t.Fatalf("final frame %q does not highlight newest search history entry", frame)
+	}
+}
+
+func TestInteractiveLoopPersistsHistoryAcrossRuns(t *testing.T) {
+	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	home := t.TempDir()
+
+	var first bytes.Buffer
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":timeout\nq"), &first, RunOptions{
+		Width:       220,
+		Height:      8,
+		HomeDir:     home,
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+
+	var second bytes.Buffer
+	err = Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("q"), &second, RunOptions{
+		Width:       220,
+		Height:      8,
+		HomeDir:     home,
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("second run: %v", err)
+	}
+
+	frame := lastRenderedFrame(second.String())
+	if !strings.Contains(frame, "filter:timeout\n") {
+		t.Fatalf("second run frame %q does not restore last filter on startup", frame)
+	}
+}
+
+func TestInteractiveLoopPersistsSearchHistoryAcrossRuns(t *testing.T) {
+	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	home := t.TempDir()
+
+	var first bytes.Buffer
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/ready\nq"), &first, RunOptions{
+		Width:       220,
+		Height:      8,
+		HomeDir:     home,
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("first run: %v", err)
+	}
+
+	var second bytes.Buffer
+	err = Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("q"), &second, RunOptions{
+		Width:       220,
+		Height:      8,
+		HomeDir:     home,
+		Interactive: true,
+	})
+	if err != nil {
+		t.Fatalf("second run: %v", err)
+	}
+
+	frame := lastRenderedFrame(second.String())
+	if !strings.Contains(frame, "search:ready\n") {
+		t.Fatalf("second run frame %q does not restore last search on startup", frame)
+	}
+}
+
+func TestNewLoopStateRestoresLastFilterAndSearch(t *testing.T) {
+	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	home := t.TempDir()
+	path := config.ResolveInputHistoryPath(home)
+	snapshot := usecase.InputHistorySnapshot{
+		Filter: usecase.InputChannelHistory{
+			Last:    "timeout",
+			History: []string{"timeout"},
+		},
+		Search: usecase.InputChannelHistory{
+			Last:    "ready",
+			History: []string{"ready"},
+		},
+	}
+	if err := config.SaveInputHistory(path, snapshot); err != nil {
+		t.Fatalf("save history: %v", err)
+	}
+
+	session := usecase.InputSession{Mode: usecase.InputModeFile, SOTPath: logPath}
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 8, unboundedRecordLimit, home)
+	if err != nil {
+		t.Fatalf("new loop state: %v", err)
+	}
+
+	if state.filterText != "timeout" {
+		t.Fatalf("filter text = %q, want timeout", state.filterText)
+	}
+	if state.searchText != "ready" {
+		t.Fatalf("search text = %q, want ready", state.searchText)
 	}
 }
 
@@ -881,7 +1061,7 @@ func TestInteractiveLoopRuntimeSearchAddsHighlightMetadataOverFilteredRecords(t 
 		Mode:    usecase.InputModeFile,
 		SOTPath: logPath,
 	}
-	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 8, 100)
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 8, 100, "")
 	if err != nil {
 		t.Fatalf("new loop state: %v", err)
 	}
@@ -1275,6 +1455,56 @@ func TestInteractiveLoopHorizontalScrollIgnoredWhenWrapOn(t *testing.T) {
 	}
 }
 
+func TestLoopStateFilterInputArrowKeysMoveCursor(t *testing.T) {
+	logPath := writeLoopLog(t, "info ready\nerror database\n")
+	session := usecase.InputSession{Mode: usecase.InputModeFile, SOTPath: logPath}
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 8, unboundedRecordLimit, "")
+	if err != nil {
+		t.Fatalf("new loop state: %v", err)
+	}
+
+	ctx := context.Background()
+	state.handleInput(ctx, byteLoopInput(':'))
+	for _, ch := range "error" {
+		state.handleInput(ctx, byteLoopInput(byte(ch)))
+	}
+	state.handleInput(ctx, eventLoopInput(loopEventEnter))
+	state.handleInput(ctx, byteLoopInput(':'))
+	state.handleInput(ctx, eventLoopInput(loopEventHorizontalLeft))
+	state.handleInput(ctx, eventLoopInput(loopEventHorizontalLeft))
+	state.handleInput(ctx, byteLoopInput('z'))
+
+	frame := tui.FrameText(state.renderFrame())
+	if !strings.Contains(frame, "filter:> errz_or\n") {
+		t.Fatalf("frame %q does not show mid-string cursor after arrow keys", frame)
+	}
+}
+
+func TestLoopStateSearchInputArrowKeysMoveCursor(t *testing.T) {
+	logPath := writeLoopLog(t, "idle ready\ntimeout database\n")
+	session := usecase.InputSession{Mode: usecase.InputModeFile, SOTPath: logPath}
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 8, unboundedRecordLimit, "")
+	if err != nil {
+		t.Fatalf("new loop state: %v", err)
+	}
+
+	ctx := context.Background()
+	state.handleInput(ctx, byteLoopInput('/'))
+	for _, ch := range "timeout" {
+		state.handleInput(ctx, byteLoopInput(byte(ch)))
+	}
+	state.handleInput(ctx, eventLoopInput(loopEventEnter))
+	state.handleInput(ctx, byteLoopInput('/'))
+	state.handleInput(ctx, eventLoopInput(loopEventHorizontalLeft))
+	state.handleInput(ctx, eventLoopInput(loopEventHorizontalLeft))
+	state.handleInput(ctx, byteLoopInput('z'))
+
+	frame := tui.FrameText(state.renderFrame())
+	if !strings.Contains(frame, "search:> timeoz_ut\n") {
+		t.Fatalf("frame %q does not show mid-string cursor after arrow keys", frame)
+	}
+}
+
 func TestInteractiveLoopHorizontalScrollKeysInFilterAndSearchInputEditText(t *testing.T) {
 	logPath := writeLoopLog(t, "hl value\nother\n")
 
@@ -1363,14 +1593,11 @@ func TestRunInteractiveSTDIOStreamsNewLinesThroughSOTBeforeRedraw(t *testing.T) 
 	outPath := filepath.Join(dir, "session.log")
 	stdin := newControlledReader()
 	keyInput := &scriptedReader{
-		data: []byte("?q"),
+		data: []byte("q"),
 		before: map[int]func() error{
 			0: func() error {
 				stdin.WriteString("alpha\nbeta\n")
 				stdin.Close()
-				return nil
-			},
-			1: func() error {
 				return waitForFileContent(outPath, "alpha\nbeta\n")
 			},
 		},
@@ -1466,7 +1693,7 @@ func TestRunInteractiveSTDIOWithDefaultKeyInputWaitsForStreamEOFAndFinalRefresh(
 func TestInteractiveLoopRefreshWithFollowOnPinsToNewestOutputLine(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 	keyInput := &scriptedReader{
-		data: []byte("G?q"),
+		data: []byte("GGq"),
 		before: map[int]func() error{
 			1: func() error {
 				return appendToLoopLog(logPath, "four\nfive\n")
@@ -1501,9 +1728,9 @@ func TestInteractiveLoopRefreshWithFollowOnPinsToNewestOutputLine(t *testing.T) 
 func TestInteractiveLoopRefreshWithFollowOffPreservesViewportAndCursor(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\nfour\nfive\n")
 	keyInput := &scriptedReader{
-		data: []byte("Gk?q"),
+		data: []byte("Gkq"),
 		before: map[int]func() error{
-			2: func() error {
+			1: func() error {
 				return appendToLoopLog(logPath, "six\nseven\n")
 			},
 		},

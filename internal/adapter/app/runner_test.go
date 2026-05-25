@@ -143,8 +143,8 @@ func TestRunInteractiveUsesBubbleTeaRuntimeWhenRequested(t *testing.T) {
 	for _, want := range []string{
 		"first",
 		"second",
-		"FILTER INPUT",
-		"SEARCH INPUT",
+		"FILTER INPUT(':')",
+		"SEARCH INPUT('/')",
 		"\x1b[?1049h",
 		"\x1b[?1049l",
 		"\x1b[",

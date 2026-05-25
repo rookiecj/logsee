@@ -16,6 +16,9 @@ import (
 const (
 	statusSeparator         = " | "
 	statusPathValueMaxWidth = 24
+
+	logLineNumberColor       = "243"
+	logLineNumberCursorColor = "238"
 )
 
 type ZoneName string
@@ -43,9 +46,10 @@ const (
 )
 
 type TextInputModel struct {
-	Text    string
-	Error   string
-	Editing bool
+	Text      string
+	Error     string
+	Editing   bool
+	CursorPos int // rune index while editing; caret renders before this index
 }
 
 type LogLineModel struct {
@@ -104,8 +108,14 @@ type RenderModel struct {
 	Search   TextInputModel
 	Logs     []LogLineModel
 	Status   StatusModel
-	HelpOpen bool
-	Wrap     bool
+	HelpOpen         bool
+	HelpScrollOffset int
+	HistoryPickerOpen         bool
+	HistoryPickerTitle        string
+	HistoryPickerItems        []string
+	HistoryPickerIndex        int
+	HistoryPickerScrollOffset int
+	Wrap             bool
 
 	HorizontalOffset int
 }
@@ -123,7 +133,8 @@ type Zone struct {
 	Lines      []string
 	Highlights [][]usecase.HighlightRange
 	Input      TextInputModel
-	Logs       []LogLineModel
+	Logs         []LogLineModel
+	HelpOverlay  bool
 }
 
 func RenderFrame(model RenderModel) Frame {
@@ -132,11 +143,32 @@ func RenderFrame(model RenderModel) Frame {
 		listHeight = 0
 	}
 
-	visibleLogs := visualLogModels(model.Logs, listHeight, model.Width, model.Wrap, model.HorizontalOffset)
-	logLines := formatLogLines(visibleLogs, listHeight)
-	logHighlights := formatLogHighlights(visibleLogs, listHeight)
+	listZone := Zone{
+		Name:      ZoneLogList,
+		Height:    listHeight,
+		Focusable: true,
+	}
+	if model.HelpOpen {
+		listZone.HelpOverlay = true
+		listZone.Lines = HelpViewportLines(model.HelpScrollOffset, listHeight, model.Width)
+	} else if model.HistoryPickerOpen {
+		listZone.HelpOverlay = true
+		listZone.Lines = HistoryPickerViewportLines(
+			model.HistoryPickerTitle,
+			model.HistoryPickerItems,
+			model.HistoryPickerIndex,
+			model.HistoryPickerScrollOffset,
+			listHeight,
+			model.Width,
+		)
+	} else {
+		visibleLogs := visualLogModels(model.Logs, listHeight, model.Width, model.Wrap, model.HorizontalOffset)
+		listZone.Lines = formatLogLines(visibleLogs, listHeight)
+		listZone.Highlights = formatLogHighlights(visibleLogs, listHeight)
+		listZone.Logs = visibleLogs
+	}
 
-	frame := Frame{
+	return Frame{
 		Width:  model.Width,
 		Height: model.Height,
 		Zones: []Zone{
@@ -154,14 +186,7 @@ func RenderFrame(model RenderModel) Frame {
 				Lines:     []string{formatInputLine("search", model.Search)},
 				Input:     model.Search,
 			},
-			{
-				Name:       ZoneLogList,
-				Height:     listHeight,
-				Focusable:  true,
-				Lines:      logLines,
-				Highlights: logHighlights,
-				Logs:       visibleLogs,
-			},
+			listZone,
 			{
 				Name:      ZoneStatusbar,
 				Height:    1,
@@ -170,15 +195,6 @@ func RenderFrame(model RenderModel) Frame {
 			},
 		},
 	}
-	if model.HelpOpen {
-		frame.Zones = append(frame.Zones, Zone{
-			Name:      ZoneHelpModal,
-			Height:    helpModalHeight(model.Height),
-			Focusable: true,
-			Lines:     formatHelpModalLines(),
-		})
-	}
-	return frame
 }
 
 func FrameText(frame Frame) string {
@@ -234,7 +250,13 @@ func StyledFrameText(frame Frame) string {
 	for _, zone := range frame.Zones {
 		if zone.Name == ZoneLogList {
 			for index := 0; index < zone.Height; index++ {
-				if index < len(zone.Logs) {
+				if zone.HelpOverlay {
+					line := ""
+					if index < len(zone.Lines) {
+						line = zone.Lines[index]
+					}
+					builder.WriteString(styleHelpOverlayLine(line, frame.Width))
+				} else if index < len(zone.Logs) {
 					builder.WriteString(styleLogLine(zone.Logs[index]))
 				} else {
 					builder.WriteString(styleZoneLine(zone, "", frame.Width))
@@ -303,9 +325,9 @@ func inputBarStyle(input TextInputModel, name ZoneName) lipgloss.Style {
 }
 
 func formatInputChromeLine(name ZoneName, input TextInputModel) string {
-	label := "FILTER INPUT"
+	label := "FILTER INPUT(':')"
 	if name == ZoneSearchInput {
-		label = "SEARCH INPUT"
+		label = "SEARCH INPUT('/')"
 	}
 
 	var builder strings.Builder
@@ -313,7 +335,7 @@ func formatInputChromeLine(name ZoneName, input TextInputModel) string {
 	builder.WriteString("  │  ")
 	if input.Editing {
 		builder.WriteString("> ")
-		builder.WriteString(formatEditingText(input.Text))
+		builder.WriteString(formatEditingText(input.Text, input.CursorPos))
 	} else if strings.TrimSpace(input.Text) == "" {
 		builder.WriteString("∅")
 	} else {
@@ -327,19 +349,10 @@ func formatInputChromeLine(name ZoneName, input TextInputModel) string {
 }
 
 func styleLogLine(log LogLineModel) string {
-	base := logListStyle
-	switch log.Selected {
-	case SelectionKindRange:
-		base = frameRenderer.NewStyle().Background(lipgloss.Color("236")).Foreground(lipgloss.Color("252"))
-	case SelectionKindPicked:
-		base = frameRenderer.NewStyle().Background(lipgloss.Color("238")).Foreground(lipgloss.Color("252"))
-	}
-	if log.Cursor {
-		base = base.Reverse(true)
-	}
+	bodyStyle, gutterStyle := logLineBodyAndGutterStyles(log)
 
 	if log.Continuation {
-		return base.Render(strings.Repeat(" ", log.PrefixWidth)) + styleHighlightedText(log.Text, log.Highlights, base)
+		return bodyStyle.Render(strings.Repeat(" ", log.PrefixWidth)) + styleHighlightedText(log.Text, log.Highlights, bodyStyle)
 	}
 
 	bookmark := " "
@@ -347,15 +360,39 @@ func styleLogLine(log LogLineModel) string {
 		bookmark = bookmarkBadgeStyle(log.Cursor).Render(strconv.Itoa(log.Bookmark))
 	}
 	var builder strings.Builder
-	builder.WriteString(base.Render(strconv.Itoa(log.RawLineNumber)))
-	builder.WriteString(base.Render(" "))
+	builder.WriteString(gutterStyle.Render(strconv.Itoa(log.RawLineNumber)))
+	builder.WriteString(gutterStyle.Render(" "))
 	builder.WriteString(bookmark)
-	builder.WriteString(base.Render(" "))
+	builder.WriteString(gutterStyle.Render(" "))
 	if selection := selectionPrefix(log.Selected); selection != "" {
-		builder.WriteString(base.Render(selection + " "))
+		builder.WriteString(gutterStyle.Render(selection + " "))
 	}
-	builder.WriteString(styleHighlightedText(log.Text, log.Highlights, base))
+	builder.WriteString(styleHighlightedText(log.Text, log.Highlights, bodyStyle))
 	return builder.String()
+}
+
+func logLineBodyAndGutterStyles(log LogLineModel) (body lipgloss.Style, gutter lipgloss.Style) {
+	body = logListStyle
+	switch log.Selected {
+	case SelectionKindRange:
+		body = frameRenderer.NewStyle().Background(lipgloss.Color("236")).Foreground(lipgloss.Color("252"))
+	case SelectionKindPicked:
+		body = frameRenderer.NewStyle().Background(lipgloss.Color("238")).Foreground(lipgloss.Color("252"))
+	}
+
+	gutterColor := lipgloss.Color(logLineNumberColor)
+	if log.Cursor {
+		gutterColor = lipgloss.Color(logLineNumberCursorColor)
+	}
+	gutter = body.Copy().
+		Foreground(gutterColor).
+		Faint(true).
+		Reverse(false)
+
+	if log.Cursor {
+		body = body.Reverse(true)
+	}
+	return body, gutter
 }
 
 func bookmarkBadgeStyle(cursor bool) lipgloss.Style {
@@ -377,17 +414,13 @@ func styleHighlightedText(text string, ranges []usecase.HighlightRange, base lip
 		return base.Render(text)
 	}
 
-	match := base.
-		Background(lipgloss.Color("214")).
-		Foreground(lipgloss.Color("0"))
-
 	var builder strings.Builder
 	pos := 0
 	for _, r := range ranges {
 		if r.Start > pos {
 			builder.WriteString(base.Render(text[pos:r.Start]))
 		}
-		builder.WriteString(match.Render(text[r.Start:r.End]))
+		builder.WriteString(searchHighlightStyle(r.Color, base).Render(text[r.Start:r.End]))
 		pos = r.End
 	}
 	if pos < len(text) {
@@ -428,7 +461,7 @@ func mergedHighlightRanges(text string, ranges []usecase.HighlightRange) []useca
 	merged := clean[:1]
 	for _, r := range clean[1:] {
 		last := &merged[len(merged)-1]
-		if r.Start <= last.End {
+		if r.Color == last.Color && r.Start <= last.End {
 			if r.End > last.End {
 				last.End = r.End
 			}
@@ -437,6 +470,41 @@ func mergedHighlightRanges(text string, ranges []usecase.HighlightRange) []useca
 		merged = append(merged, r)
 	}
 	return merged
+}
+
+var searchHighlightBackgrounds = map[string]string{
+	"red":     "196",
+	"green":   "34",
+	"blue":    "21",
+	"yellow":  "226",
+	"cyan":    "51",
+	"magenta": "201",
+	"white":   "255",
+	"black":   "232",
+	"orange":  "214",
+	"purple":  "129",
+	"pink":    "213",
+}
+
+func searchHighlightStyle(color string, base lipgloss.Style) lipgloss.Style {
+	if color == "" {
+		return base.
+			Background(lipgloss.Color("214")).
+			Foreground(lipgloss.Color("0"))
+	}
+	background, ok := searchHighlightBackgrounds[color]
+	if !ok {
+		return base.
+			Background(lipgloss.Color("214")).
+			Foreground(lipgloss.Color("0"))
+	}
+	foreground := "0"
+	if color == "yellow" {
+		foreground = "16"
+	}
+	return base.
+		Background(lipgloss.Color(background)).
+		Foreground(lipgloss.Color(foreground))
 }
 
 func styleStatusbarLine(line string, width int) string {
@@ -645,7 +713,7 @@ func formatInputLine(label string, input TextInputModel) string {
 	line := label + ":"
 	if input.Editing {
 		line += "> "
-		line += formatEditingText(input.Text)
+		line += formatEditingText(input.Text, input.CursorPos)
 	} else {
 		line += input.Text
 	}
@@ -655,11 +723,19 @@ func formatInputLine(label string, input TextInputModel) string {
 	return line
 }
 
-func formatEditingText(text string) string {
-	if text == "" {
-		return "_"
+func formatEditingText(text string, cursorPos int) string {
+	runes := []rune(text)
+	if cursorPos < 0 {
+		cursorPos = 0
 	}
-	return text + "_"
+	if cursorPos > len(runes) {
+		cursorPos = len(runes)
+	}
+	var builder strings.Builder
+	builder.WriteString(string(runes[:cursorPos]))
+	builder.WriteRune('_')
+	builder.WriteString(string(runes[cursorPos:]))
+	return builder.String()
 }
 
 func truncateRunes(text string, width int) string {
@@ -881,6 +957,7 @@ func intersectHighlightRanges(ranges []usecase.HighlightRange, start int, end in
 		intersections = append(intersections, usecase.HighlightRange{
 			Start: r.Start - start,
 			End:   r.End - start,
+			Color: r.Color,
 		})
 	}
 	return intersections
@@ -911,29 +988,8 @@ func selectionPrefix(kind SelectionKind) string {
 	}
 }
 
-func helpModalHeight(frameHeight int) int {
-	if frameHeight <= 0 {
-		return 0
-	}
-	lineCount := len(formatHelpModalLines())
-	if frameHeight < lineCount {
-		return frameHeight
-	}
-	return lineCount
-}
-
-func formatHelpModalLines() []string {
-	return []string{
-		"Help",
-		"Movement: j/k, Up/Down, PageUp/PageDown, Home/End, n/p",
-		"Follow mode: G jumps to end and follows; upward movement stops follow",
-		"Filter input: : opens filter input",
-		"Search input: / opens search input; n/p move matches",
-		"Bookmarks: m toggles current line; 1-9 jump to visible bookmark",
-		"Wrap: w toggles long log row wrapping",
-		"Selection/copy: Shift+move selects range; Space picks; c copies",
-		"Esc/F1 close",
-	}
+func styleHelpOverlayLine(line string, width int) string {
+	return renderStyledLine(helpModalStyle, line, width)
 }
 
 func defaultInputMode(mode InputMode) InputMode {
