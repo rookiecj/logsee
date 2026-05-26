@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -40,12 +41,8 @@ func TestStdioInputPersistsLinesBeforeSourceVisibility(t *testing.T) {
 	}
 
 	wantEvents := []string{
-		"append:first",
-		"read:1",
-		"visible:first",
-		"append:second",
-		"read:2",
-		"visible:second",
+		"append-batch:2",
+		"visible:",
 	}
 	if !reflect.DeepEqual(events, wantEvents) {
 		t.Fatalf("events = %#v, want %#v", events, wantEvents)
@@ -58,7 +55,126 @@ func TestStdioInputPersistsLinesBeforeSourceVisibility(t *testing.T) {
 	}
 }
 
-func TestStdioVisibilityUsesFileBackedSourceData(t *testing.T) {
+func TestStdioVisibilityDoesNotRescanSOTForEveryLine(t *testing.T) {
+	// given
+	appender := &recordingAppender{path: "/tmp/session.log"}
+	observer := &recordingObserver{}
+	source := &recordingSource{
+		path:       "/tmp/session.log",
+		failOnRead: true,
+	}
+	session, err := NewInputSession(InputRequest{
+		InputPath: "-",
+		OutPath:   "/tmp/session.log",
+	}, InputPorts{
+		StdioSink:  appender,
+		FileSource: source,
+	})
+	if err != nil {
+		t.Fatalf("new input session: %v", err)
+	}
+
+	// when
+	err = session.ConsumeStdio(context.Background(), strings.NewReader("first\nsecond\n"), observer)
+
+	// then
+	if err != nil {
+		t.Fatalf("consume stdio: %v", err)
+	}
+	if got, want := observer.lines, []string{""}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("visibility notifications = %#v, want one batch notification %#v", got, want)
+	}
+	if got, want := source.readCalls, 0; got != want {
+		t.Fatalf("SOT read calls = %d, want %d", got, want)
+	}
+}
+
+func TestStdioHighVolumePersistenceExceedsFormerStallSize(t *testing.T) {
+	// given
+	const lineCount = 80_000
+	linePayload := strings.Repeat("x", 48)
+	var input strings.Builder
+	input.Grow(lineCount * (len(linePayload) + 8))
+	for i := 1; i <= lineCount; i++ {
+		input.WriteString("line-")
+		input.WriteString(strconv.Itoa(i))
+		input.WriteString(linePayload)
+		input.WriteByte('\n')
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "session.log")
+	appender := &recordingAppender{path: path}
+	session, err := NewInputSession(InputRequest{
+		InputPath: "-",
+		OutPath:   path,
+	}, InputPorts{
+		StdioSink:  appender,
+		FileSource: &recordingSource{path: path},
+	})
+	if err != nil {
+		t.Fatalf("new input session: %v", err)
+	}
+
+	// when
+	err = session.ConsumeStdio(context.Background(), strings.NewReader(input.String()), nil)
+
+	// then
+	if err != nil {
+		t.Fatalf("consume stdio: %v", err)
+	}
+	const formerStallBytes = 4 * 1024 * 1024
+	estimatedBytes := 0
+	for _, line := range appender.lines {
+		estimatedBytes += len(line) + 1
+	}
+	if estimatedBytes <= formerStallBytes {
+		t.Fatalf("persisted bytes = %d, want more than former stall point %d", estimatedBytes, formerStallBytes)
+	}
+	if got, want := appender.batchAppendCalls, (lineCount+stdioAppendBatchMaxLines-1)/stdioAppendBatchMaxLines; got != want {
+		t.Fatalf("batch append calls = %d, want %d", got, want)
+	}
+}
+
+func TestStdioConsumeUsesBatchedPersistenceWrites(t *testing.T) {
+	// given
+	const lineCount = stdioAppendBatchMaxLines + 5
+	var input strings.Builder
+	for i := 1; i <= lineCount; i++ {
+		input.WriteString("line-")
+		input.WriteString(strconv.Itoa(i))
+		input.WriteByte('\n')
+	}
+	appender := &recordingAppender{path: "/tmp/session.log"}
+	session, err := NewInputSession(InputRequest{
+		InputPath: "-",
+		OutPath:   "/tmp/session.log",
+	}, InputPorts{
+		StdioSink:  appender,
+		FileSource: &recordingSource{path: "/tmp/session.log"},
+	})
+	if err != nil {
+		t.Fatalf("new input session: %v", err)
+	}
+
+	// when
+	err = session.ConsumeStdio(context.Background(), strings.NewReader(input.String()), nil)
+
+	// then
+	if err != nil {
+		t.Fatalf("consume stdio: %v", err)
+	}
+	if got, want := appender.batchAppendCalls, 2; got != want {
+		t.Fatalf("batch append calls = %d, want %d", got, want)
+	}
+	if got, want := appender.appendLineCalls, 0; got != want {
+		t.Fatalf("single-line append calls = %d, want %d", got, want)
+	}
+	if got, want := len(appender.lines), lineCount; got != want {
+		t.Fatalf("persisted lines = %d, want %d", got, want)
+	}
+}
+
+func TestStdioVisibilityUsesPersistedInputLineAfterAppend(t *testing.T) {
 	appender := &recordingAppender{path: "/tmp/session.log"}
 	observer := &recordingObserver{}
 	source := &recordingSource{
@@ -82,8 +198,8 @@ func TestStdioVisibilityUsesFileBackedSourceData(t *testing.T) {
 		t.Fatalf("consume stdio: %v", err)
 	}
 
-	if got, want := observer.lines, []string{"from-sot:first", "from-sot:second"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("visible lines = %#v, want file-backed SOT lines %#v", got, want)
+	if got, want := observer.lines, []string{""}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("visibility notifications = %#v, want one batch notification %#v", got, want)
 	}
 	if got, want := appender.lines, []string{"from-stdin:first", "from-stdin:second"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("persisted lines = %#v, want original stdin lines %#v", got, want)
@@ -120,12 +236,11 @@ func TestStdioAppendUsesWorkerBoundaryBeforeSourceVisibility(t *testing.T) {
 	}
 
 	wantEvents := []string{
-		"worker:raw-one",
-		"read:1",
-		"visible:visible-one",
+		"worker-batch:1",
+		"visible:",
 	}
 	if !reflect.DeepEqual(events, wantEvents) {
-		t.Fatalf("events = %#v, want worker append before SOT read and visibility %#v", events, wantEvents)
+		t.Fatalf("events = %#v, want worker append before visibility %#v", events, wantEvents)
 	}
 	if got, want := worker.lines, []string{"raw-one"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("worker lines = %#v, want %#v", got, want)
@@ -184,16 +299,13 @@ func TestStdioAppendFailureSuppressesVisibilityAndReportsError(t *testing.T) {
 	}
 
 	wantEvents := []string{
-		"append:ok",
-		"read:1",
-		"visible:ok",
-		"append:bad",
+		"append-batch:3",
 	}
 	if !reflect.DeepEqual(events, wantEvents) {
 		t.Fatalf("events = %#v, want %#v", events, wantEvents)
 	}
-	if got, want := observer.lines, []string{"ok"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("visible lines = %#v, want %#v", got, want)
+	if got, want := len(observer.lines), 0; got != want {
+		t.Fatalf("visibility notifications = %d, want %d after failed batch", got, want)
 	}
 }
 
@@ -242,24 +354,37 @@ func TestInputSessionDetectsLogTypeFromFileBackedSOTSource(t *testing.T) {
 }
 
 type recordingAppender struct {
-	path      string
-	lines     []string
-	events    *[]string
-	failLines map[string]error
+	path             string
+	lines            []string
+	events           *[]string
+	failLines        map[string]error
+	batchAppendCalls int
+	appendLineCalls  int
 }
 
 func (a *recordingAppender) Path() string {
 	return a.path
 }
 
-func (a *recordingAppender) AppendLine(_ context.Context, line string) error {
+func (a *recordingAppender) AppendLine(ctx context.Context, line string) error {
+	a.appendLineCalls++
+	return a.AppendLines(ctx, []string{line})
+}
+
+func (a *recordingAppender) AppendLines(_ context.Context, lines []string) error {
+	if len(lines) == 0 {
+		return nil
+	}
+	a.batchAppendCalls++
 	if a.events != nil {
-		*a.events = append(*a.events, "append:"+line)
+		*a.events = append(*a.events, "append-batch:"+strconv.Itoa(len(lines)))
 	}
-	if err := a.failLines[line]; err != nil {
-		return err
+	for _, line := range lines {
+		if err := a.failLines[line]; err != nil {
+			return err
+		}
+		a.lines = append(a.lines, line)
 	}
-	a.lines = append(a.lines, line)
 	return nil
 }
 
@@ -273,11 +398,18 @@ func (w *recordingWorker) Path() string {
 	return w.path
 }
 
-func (w *recordingWorker) AppendLine(_ context.Context, line string) error {
-	if w.events != nil {
-		*w.events = append(*w.events, "worker:"+line)
+func (w *recordingWorker) AppendLine(ctx context.Context, line string) error {
+	return w.AppendLines(ctx, []string{line})
+}
+
+func (w *recordingWorker) AppendLines(_ context.Context, lines []string) error {
+	if len(lines) == 0 {
+		return nil
 	}
-	w.lines = append(w.lines, line)
+	if w.events != nil {
+		*w.events = append(*w.events, "worker-batch:"+strconv.Itoa(len(lines)))
+	}
+	w.lines = append(w.lines, lines...)
 	return nil
 }
 
@@ -294,9 +426,11 @@ func (o *recordingObserver) SourceLineAvailable(line string) {
 }
 
 type recordingSource struct {
-	path   string
-	lines  []string
-	events *[]string
+	path       string
+	lines      []string
+	events     *[]string
+	failOnRead bool
+	readCalls  int
 }
 
 func (s *recordingSource) Path() string {
@@ -304,8 +438,12 @@ func (s *recordingSource) Path() string {
 }
 
 func (s *recordingSource) ReadLine(_ context.Context, lineNumber int) (string, error) {
+	s.readCalls++
 	if s.events != nil {
 		*s.events = append(*s.events, "read:"+strconv.Itoa(lineNumber))
+	}
+	if s.failOnRead {
+		return "", errors.New("unexpected SOT read")
 	}
 	if lineNumber < 1 || lineNumber > len(s.lines) {
 		return "", errors.New("line not available")

@@ -215,6 +215,13 @@ func buildInitialFrame(ctx context.Context, session usecase.InputSession, source
 	return state.renderFrame(), nil
 }
 
+func usesIndexedSourceWindow(session usecase.InputSession, recordLimit int) bool {
+	if recordLimit != unboundedRecordLimit {
+		return false
+	}
+	return session.Mode == usecase.InputModeFile || session.Mode == usecase.InputModeStdio
+}
+
 func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height, recordLimit int, homeDir string) (*loopState, error) {
 	listHeight := height - 3
 	if listHeight < 0 {
@@ -234,7 +241,7 @@ func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath 
 	var outputRecords []usecase.OutputLogRecord
 	var totalRawLines int
 	var outputCount int
-	if session.Mode == usecase.InputModeFile && recordLimit == unboundedRecordLimit {
+	if usesIndexedSourceWindow(session, recordLimit) {
 		index, err := buildFileLineIndex(ctx, sourcePath)
 		if err != nil {
 			return nil, err
@@ -334,21 +341,21 @@ type loopState struct {
 	focus             loopFocus
 	modeStack         []loopMode
 
-	navigation       *usecase.NavigationState
-	bookmarks        *usecase.BookmarkState
-	selection        *usecase.SelectionState
-	clipboard        port.ClipboardWriter
-	homeDir              string
-	inputHistoryPath     string
-	inputHistory         usecase.InputHistorySnapshot
-	historyPickerOpen    bool
-	historyPickerFilter  bool
-	historyPickerIndex   int
-	historyPickerScroll  int
-	helpOpen             bool
-	helpScrollOffset     int
-	wrap                 bool
-	horizontalOffset int
+	navigation          *usecase.NavigationState
+	bookmarks           *usecase.BookmarkState
+	selection           *usecase.SelectionState
+	clipboard           port.ClipboardWriter
+	homeDir             string
+	inputHistoryPath    string
+	inputHistory        usecase.InputHistorySnapshot
+	historyPickerOpen   bool
+	historyPickerFilter bool
+	historyPickerIndex  int
+	historyPickerScroll int
+	helpOpen            bool
+	helpScrollOffset    int
+	wrap                bool
+	horizontalOffset    int
 
 	readState               tui.ReadState
 	runtimeMessage          string
@@ -361,11 +368,11 @@ func (s *loopState) renderFrame() tui.Frame {
 	cursorRawLine := s.cursorRawLine()
 
 	return tui.RenderFrame(tui.RenderModel{
-		Width:            s.width,
-		Height:           s.height,
-		Filter:           s.filterInputModel(),
-		Search:           s.searchInputModel(),
-		Logs:             logs,
+		Width:                     s.width,
+		Height:                    s.height,
+		Filter:                    s.filterInputModel(),
+		Search:                    s.searchInputModel(),
+		Logs:                      logs,
 		HelpOpen:                  s.helpOpen,
 		HelpScrollOffset:          s.helpScrollOffset,
 		HistoryPickerOpen:         s.historyPickerOpen,
@@ -373,8 +380,8 @@ func (s *loopState) renderFrame() tui.Frame {
 		HistoryPickerItems:        s.historyPickerItems(),
 		HistoryPickerIndex:        s.historyPickerIndex,
 		HistoryPickerScrollOffset: s.historyPickerScroll,
-		Wrap:             s.wrap,
-		HorizontalOffset: s.horizontalOffset,
+		Wrap:                      s.wrap,
+		HorizontalOffset:          s.horizontalOffset,
 		Status: tui.StatusModel{
 			CursorRawLine: cursorRawLine,
 			TotalRawLines: s.totalRawLines,
@@ -738,7 +745,16 @@ func (s *loopState) refreshFileWindow(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("refresh file window: %w", err)
 	}
 	if s.lineIndex == nil || size != s.lineIndex.size {
-		index, err := buildFileLineIndex(ctx, s.sourcePath)
+		var index fileLineIndex
+		var err error
+		switch {
+		case s.lineIndex == nil:
+			index, err = buildFileLineIndex(ctx, s.sourcePath)
+		case size < s.lineIndex.size:
+			index, err = buildFileLineIndex(ctx, s.sourcePath)
+		default:
+			index, err = extendFileLineIndex(ctx, s.sourcePath, *s.lineIndex)
+		}
 		if err != nil {
 			return false, fmt.Errorf("refresh file index: %w", err)
 		}

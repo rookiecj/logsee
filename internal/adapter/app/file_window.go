@@ -58,6 +58,48 @@ func buildFileLineIndex(ctx context.Context, path string) (fileLineIndex, error)
 	return fileLineIndex{offsets: offsets, size: offset}, nil
 }
 
+func extendFileLineIndex(ctx context.Context, path string, index fileLineIndex) (fileLineIndex, error) {
+	if index.size == 0 {
+		return buildFileLineIndex(ctx, path)
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return fileLineIndex{}, fmt.Errorf("open rendered SOT %q: %w", path, err)
+	}
+	defer file.Close()
+
+	if _, err := file.Seek(index.size, io.SeekStart); err != nil {
+		return fileLineIndex{}, fmt.Errorf("seek rendered SOT %q: %w", path, err)
+	}
+
+	reader := bufio.NewReader(file)
+	offsets := append([]int64(nil), index.offsets...)
+	offset := index.size
+	for {
+		select {
+		case <-ctx.Done():
+			return fileLineIndex{}, ctx.Err()
+		default:
+		}
+
+		lineStart := offset
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 {
+			offsets = append(offsets, lineStart)
+			offset += int64(len(line))
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fileLineIndex{}, fmt.Errorf("extend index rendered SOT %q: %w", path, err)
+		}
+	}
+
+	return fileLineIndex{offsets: offsets, size: offset}, nil
+}
+
 func (i fileLineIndex) totalLines() int {
 	return len(i.offsets)
 }

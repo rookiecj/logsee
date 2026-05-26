@@ -104,18 +104,18 @@ type RenderModel struct {
 	Width  int
 	Height int
 
-	Filter   TextInputModel
-	Search   TextInputModel
-	Logs     []LogLineModel
-	Status   StatusModel
-	HelpOpen         bool
-	HelpScrollOffset int
+	Filter                    TextInputModel
+	Search                    TextInputModel
+	Logs                      []LogLineModel
+	Status                    StatusModel
+	HelpOpen                  bool
+	HelpScrollOffset          int
 	HistoryPickerOpen         bool
 	HistoryPickerTitle        string
 	HistoryPickerItems        []string
 	HistoryPickerIndex        int
 	HistoryPickerScrollOffset int
-	Wrap             bool
+	Wrap                      bool
 
 	HorizontalOffset int
 }
@@ -127,14 +127,14 @@ type Frame struct {
 }
 
 type Zone struct {
-	Name       ZoneName
-	Height     int
-	Focusable  bool
-	Lines      []string
-	Highlights [][]usecase.HighlightRange
-	Input      TextInputModel
-	Logs         []LogLineModel
-	HelpOverlay  bool
+	Name        ZoneName
+	Height      int
+	Focusable   bool
+	Lines       []string
+	Highlights  [][]usecase.HighlightRange
+	Input       TextInputModel
+	Logs        []LogLineModel
+	HelpOverlay bool
 }
 
 func RenderFrame(model RenderModel) Frame {

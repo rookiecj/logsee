@@ -5,11 +5,13 @@ import "context"
 type LineAppender interface {
 	Path() string
 	AppendLine(context.Context, string) error
+	AppendLines(context.Context, []string) error
 }
 
 type LineAppendWorker interface {
 	Path() string
 	AppendLine(context.Context, string) error
+	AppendLines(context.Context, []string) error
 }
 
 type FileSource interface {

@@ -34,6 +34,27 @@ func TestAppendFilePersistsLinesAndReportsPath(t *testing.T) {
 	}
 }
 
+func TestAppendFileAppendsLinesInOneBatch(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "session.log")
+	appender, err := NewAppendFile(path)
+	if err != nil {
+		t.Fatalf("new append file: %v", err)
+	}
+	defer appender.Close()
+
+	if err := appender.AppendLines(context.Background(), []string{"first", "second", "third"}); err != nil {
+		t.Fatalf("append lines batch: %v", err)
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read SOT file: %v", err)
+	}
+	if got, want := string(content), "first\nsecond\nthird\n"; got != want {
+		t.Fatalf("SOT content = %q, want %q", got, want)
+	}
+}
+
 func TestFileSourceReportsOriginalPath(t *testing.T) {
 	source := NewFileSource("/var/log/app.log")
 	if source.Path() != "/var/log/app.log" {

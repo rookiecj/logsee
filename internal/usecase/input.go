@@ -19,6 +19,11 @@ const (
 	InputModeFile  InputMode = "file"
 )
 
+const (
+	stdioAppendBatchMaxLines = 64
+	stdioAppendBatchMaxBytes = 64 * 1024
+)
+
 type InputRequest struct {
 	InputPath  string
 	OutPath    string
@@ -102,48 +107,60 @@ func (s InputSession) ConsumeStdio(ctx context.Context, input io.Reader, observe
 	}
 
 	scanner := bufio.NewScanner(input)
-	lineNumber := 0
-	for scanner.Scan() {
-		line := scanner.Text()
-		if err := s.worker.AppendLine(ctx, line); err != nil {
-			return fmt.Errorf("append stdio line to SOT %q: %w", s.SOTPath, err)
+	batch := make([]string, 0, stdioAppendBatchMaxLines)
+	batchBytes := 0
+	flush := func() error {
+		if len(batch) == 0 {
+			return nil
+		}
+		if err := s.worker.AppendLines(ctx, batch); err != nil {
+			return fmt.Errorf("append stdio batch to SOT %q: %w", s.SOTPath, err)
 		}
 		if observer != nil {
-			lineNumber++
-			visibleLine, err := s.source.ReadLine(ctx, lineNumber)
-			if err != nil {
-				return fmt.Errorf("read visible line %d from SOT %q: %w", lineNumber, s.SOTPath, err)
+			observer.SourceLineAvailable("")
+		}
+		batch = batch[:0]
+		batchBytes = 0
+		return nil
+	}
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		batch = append(batch, line)
+		batchBytes += len(line) + 1
+		if len(batch) >= stdioAppendBatchMaxLines || batchBytes >= stdioAppendBatchMaxBytes {
+			if err := flush(); err != nil {
+				return err
 			}
-			observer.SourceLineAvailable(visibleLine)
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		return fmt.Errorf("read stdio input: %w", err)
 	}
-	return nil
+	return flush()
 }
 
-type appendRequest struct {
-	ctx  context.Context
-	line string
-	done chan error
+type appendJob struct {
+	ctx   context.Context
+	lines []string
+	done  chan error
 }
 
 type lineAppendWorker struct {
 	sink     port.LineAppender
-	requests chan appendRequest
+	requests chan appendJob
 }
 
 func startLineAppendWorker(sink port.LineAppender) (port.LineAppendWorker, func()) {
 	worker := &lineAppendWorker{
 		sink:     sink,
-		requests: make(chan appendRequest),
+		requests: make(chan appendJob),
 	}
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		for request := range worker.requests {
-			request.done <- sink.AppendLine(request.ctx, request.line)
+			request.done <- sink.AppendLines(request.ctx, request.lines)
 			close(request.done)
 		}
 	}()
@@ -159,10 +176,17 @@ func (w *lineAppendWorker) Path() string {
 }
 
 func (w *lineAppendWorker) AppendLine(ctx context.Context, line string) error {
-	request := appendRequest{
-		ctx:  ctx,
-		line: line,
-		done: make(chan error, 1),
+	return w.AppendLines(ctx, []string{line})
+}
+
+func (w *lineAppendWorker) AppendLines(ctx context.Context, lines []string) error {
+	if len(lines) == 0 {
+		return nil
+	}
+	request := appendJob{
+		ctx:   ctx,
+		lines: append([]string(nil), lines...),
+		done:  make(chan error, 1),
 	}
 	select {
 	case w.requests <- request:

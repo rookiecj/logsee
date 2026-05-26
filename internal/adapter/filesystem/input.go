@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type AppendFile struct {
@@ -24,12 +25,21 @@ func (f *AppendFile) Path() string {
 	return f.path
 }
 
-func (f *AppendFile) AppendLine(_ context.Context, line string) error {
-	if _, err := f.file.WriteString(line + "\n"); err != nil {
-		return fmt.Errorf("write line: %w", err)
+func (f *AppendFile) AppendLine(ctx context.Context, line string) error {
+	return f.AppendLines(ctx, []string{line})
+}
+
+func (f *AppendFile) AppendLines(_ context.Context, lines []string) error {
+	if len(lines) == 0 {
+		return nil
 	}
-	if err := f.file.Sync(); err != nil {
-		return fmt.Errorf("sync line: %w", err)
+	var builder strings.Builder
+	for _, line := range lines {
+		builder.WriteString(line)
+		builder.WriteByte('\n')
+	}
+	if _, err := f.file.WriteString(builder.String()); err != nil {
+		return fmt.Errorf("write lines: %w", err)
 	}
 	return nil
 }

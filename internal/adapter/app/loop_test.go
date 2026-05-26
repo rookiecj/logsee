@@ -148,6 +148,33 @@ func TestInteractiveLoopNavigatesBeyondDefaultOutputCacheCapacity(t *testing.T) 
 	}
 }
 
+func TestLoopStateStdioUsesViewportWindowForLargeUnfilteredSource(t *testing.T) {
+	// given
+	const lineCount = usecase.DefaultOutputLogCacheCapacity + 5
+	logPath := writeLoopLog(t, numberedLogLines(lineCount))
+	session := usecase.InputSession{
+		Mode:    usecase.InputModeStdio,
+		SOTPath: logPath,
+	}
+
+	// when
+	state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 220, 6, unboundedRecordLimit, "")
+
+	// then
+	if err != nil {
+		t.Fatalf("new loop state: %v", err)
+	}
+	if state.lineIndex == nil {
+		t.Fatalf("line index = nil, want indexed STDIO window")
+	}
+	if got, want := state.totalRawLines, lineCount; got != want {
+		t.Fatalf("total raw lines = %d, want %d", got, want)
+	}
+	if got, want := len(state.rawLogs), state.listHeight; got != want {
+		t.Fatalf("raw logs retained = %d, want viewport window %d", got, want)
+	}
+}
+
 func TestLoopStateUsesViewportWindowForLargeUnfilteredFile(t *testing.T) {
 	const lineCount = usecase.DefaultOutputLogCacheCapacity + 5
 	logPath := writeLoopLog(t, numberedLogLines(lineCount))
