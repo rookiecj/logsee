@@ -363,46 +363,43 @@ func normalizeComparable(value string, ignoreCase bool) string {
 
 func extractKVValues(line, key string, ignoreCase bool) []string {
 	var values []string
-	searchLine := line
-	searchKey := key
-	if ignoreCase {
-		searchLine = strings.ToLower(line)
-		searchKey = strings.ToLower(key)
-	}
-
-	for offset := 0; offset < len(searchLine); {
-		index := strings.Index(searchLine[offset:], searchKey)
-		if index < 0 {
-			break
-		}
-		start := offset + index
-		end := start + len(searchKey)
-		offset = end
-		if start > 0 && isFilterIdentifierRune(rune(searchLine[start-1])) {
+	// Scan original byte coordinates; case folding may change UTF-8 byte lengths.
+	for offset := 0; offset < len(line); {
+		r, n := utf8.DecodeRuneInString(line[offset:])
+		if !isFilterIdentifierRune(r) {
+			offset += n
 			continue
 		}
-		if end >= len(searchLine) || (searchLine[end] != '=' && searchLine[end] != ':' && !isFilterSpace(searchLine[end])) {
+		start := offset
+		for offset < len(line) {
+			r, n = utf8.DecodeRuneInString(line[offset:])
+			if !isFilterIdentifierRune(r) {
+				break
+			}
+			offset += n
+		}
+		candidate := line[start:offset]
+		if candidate != key && !(ignoreCase && strings.EqualFold(candidate, key)) {
 			continue
 		}
-
-		sep := end
-		for sep < len(searchLine) && isFilterSpace(searchLine[sep]) {
+		sep := offset
+		for sep < len(line) && isFilterSpace(line[sep]) {
 			sep++
 		}
-		if sep >= len(searchLine) || (searchLine[sep] != '=' && searchLine[sep] != ':') {
+		if sep >= len(line) || (line[sep] != '=' && line[sep] != ':') {
 			continue
 		}
 		valueStart := sep + 1
-		for valueStart < len(searchLine) && isFilterSpace(searchLine[valueStart]) {
+		for valueStart < len(line) && isFilterSpace(line[valueStart]) {
 			valueStart++
 		}
 		valueEnd := valueStart
 		for valueEnd < len(line) {
-			r, size := utf8.DecodeRuneInString(line[valueEnd:])
+			r, n = utf8.DecodeRuneInString(line[valueEnd:])
 			if r == ',' || unicode.IsSpace(r) {
 				break
 			}
-			valueEnd += size
+			valueEnd += n
 		}
 		values = append(values, line[valueStart:valueEnd])
 		offset = valueEnd

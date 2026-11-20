@@ -23,3 +23,19 @@ type FileSource interface {
 type SourceObserver interface {
 	SourceLineAvailable(line string)
 }
+
+// AppendBytes must complete its durability barrier before returning success.
+type ByteAppender interface {
+	AppendBytes(context.Context, []byte) error
+	Size(context.Context) (int64, error)
+}
+type SourceProgress struct {
+	PublishedBytes int64
+	CompleteLines  int
+	EOF            bool
+}
+type ProgressObserver interface{ SourceProgressAvailable(SourceProgress) }
+
+type SelectedLineSource interface {
+	WalkLines(context.Context, int, int, func(int, string) error) error
+}

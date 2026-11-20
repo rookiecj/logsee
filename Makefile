@@ -72,3 +72,10 @@ version-up: $(VERSION_FILE) ## Bump VERSION. Defaults to minor; set VERSION_PART
 
 clean: ## Remove generated build artifacts.
 	rm -rf $(BIN_DIR)
+
+.PHONY: verify benchmark
+verify: test-once lint build ## Run correctness checks and build.
+	$(GO) test -race $(GO_PACKAGES)
+
+benchmark: ## Measure 10MiB/100MiB/1GiB warm-cache source pipelines.
+	$(GO) test ./internal/adapter/app -run '^$$' -bench BenchmarkSourcePipeline -benchtime=1x

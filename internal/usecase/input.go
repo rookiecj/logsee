@@ -1,13 +1,18 @@
 package usecase
 
 import (
-	"bufio"
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/muesli/cancelreader"
 
 	"logsee/internal/port"
 )
@@ -39,14 +44,16 @@ type InputPorts struct {
 }
 
 type InputSession struct {
-	Mode       InputMode
-	SOTPath    string
-	OutPath    string
-	IgnoreCase bool
+	Mode          InputMode
+	SOTPath       string
+	OutPath       string
+	IgnoreCase    bool
+	LogTypeConfig LogTypeConfig
 
-	worker      port.LineAppendWorker
-	closeWorker func()
-	source      port.FileSource
+	worker   port.LineAppendWorker
+	source   port.FileSource
+	rawSink  port.ByteAppender
+	progress *inputProgress
 }
 
 func NewInputSession(request InputRequest, ports InputPorts) (InputSession, error) {
@@ -63,7 +70,16 @@ func NewInputSession(request InputRequest, ports InputPorts) (InputSession, erro
 		session.SOTPath = session.OutPath
 		session.worker = ports.StdioWorker
 		if session.worker == nil {
-			session.worker, session.closeWorker = startLineAppendWorker(ports.StdioSink)
+			session.worker = ports.StdioSink
+		}
+		session.rawSink, _ = ports.StdioSink.(port.ByteAppender)
+		session.progress = &inputProgress{}
+		if session.rawSink != nil {
+			size, err := session.rawSink.Size(context.Background())
+			if err != nil {
+				return InputSession{}, err
+			}
+			session.progress.value.PublishedBytes = size
 		}
 		session.source = ports.FileSource
 		if session.source == nil {
@@ -92,7 +108,61 @@ func (s InputSession) DetectLogType(ctx context.Context, config LogTypeConfig) (
 	if s.source == nil {
 		return "", fmt.Errorf("input session requires a file-backed source for log type detection")
 	}
-	return DetectLogType(ctx, s.source, config)
+	resolved, err := ResolveLogTypeConfig("", config)
+	if err != nil {
+		return "", err
+	}
+	if s.Mode == InputModeStdio && resolved.Default == LogTypeAuto && !s.Progress().EOF {
+		var lines []string
+		var err error
+		if sampler, ok := s.source.(interface {
+			SampleCompleteLines(context.Context, int) ([]string, error)
+		}); ok {
+			lines, err = sampler.SampleCompleteLines(ctx, resolved.ProbeLines)
+		} else {
+			lines, err = s.source.SampleLines(ctx, resolved.ProbeLines)
+		}
+		if err != nil {
+			return "", err
+		}
+		if len(lines) < resolved.ProbeLines {
+			return LogTypeAuto, nil
+		}
+	}
+	return DetectLogType(ctx, s.source, resolved)
+}
+
+// Progress is a shared, absolute publication frontier. Notifications may coalesce;
+// readers always consult this state, which advances only after the sink has synced.
+type inputProgress struct {
+	mu    sync.RWMutex
+	value port.SourceProgress
+}
+
+func (s InputSession) Progress() port.SourceProgress {
+	if s.progress == nil {
+		return port.SourceProgress{EOF: true}
+	}
+	s.progress.mu.RLock()
+	defer s.progress.mu.RUnlock()
+	return s.progress.value
+}
+func (s InputSession) publish(bytes int64, lines int, eof bool, observer port.SourceObserver) {
+	if s.progress != nil {
+		s.progress.mu.Lock()
+		s.progress.value.PublishedBytes += bytes
+		s.progress.value.CompleteLines += lines
+		s.progress.value.EOF = eof
+		value := s.progress.value
+		s.progress.mu.Unlock()
+		if o, ok := observer.(port.ProgressObserver); ok {
+			o.SourceProgressAvailable(value)
+			return
+		}
+	}
+	if observer != nil {
+		observer.SourceLineAvailable("")
+	}
 }
 
 func (s InputSession) ConsumeStdio(ctx context.Context, input io.Reader, observer port.SourceObserver) error {
@@ -102,102 +172,184 @@ func (s InputSession) ConsumeStdio(ctx context.Context, input io.Reader, observe
 	if s.worker == nil {
 		return fmt.Errorf("stdio input has no append worker")
 	}
-	if s.closeWorker != nil {
-		defer s.closeWorker()
+	// File descriptors need cancellable polling, rather than closing caller-owned stdin.
+	stopRead := func() {}
+	interruptible := false
+	if f, ok := input.(*os.File); ok {
+		reader, err := cancelreader.NewReader(f)
+		if err != nil {
+			return err
+		}
+		input = reader
+		stopRead = func() { reader.Cancel() }
+		interruptible = true
+		defer reader.Close()
+	} else if closer, ok := input.(io.Closer); ok {
+		stopRead = func() { _ = closer.Close() }
+		interruptible = true
+	} else if closer, ok := input.(interface{ Close() }); ok {
+		stopRead = closer.Close
+		interruptible = true
 	}
-
-	scanner := bufio.NewScanner(input)
-	batch := make([]string, 0, stdioAppendBatchMaxLines)
-	batchBytes := 0
-	flush := func() error {
-		if len(batch) == 0 {
-			return nil
-		}
-		if err := s.worker.AppendLines(ctx, batch); err != nil {
-			return fmt.Errorf("append stdio batch to SOT %q: %w", s.SOTPath, err)
-		}
-		if observer != nil {
-			observer.SourceLineAvailable("")
-		}
-		batch = batch[:0]
-		batchBytes = 0
-		return nil
+	type readResult struct {
+		data []byte
+		err  error
 	}
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		batch = append(batch, line)
-		batchBytes += len(line) + 1
-		if len(batch) >= stdioAppendBatchMaxLines || batchBytes >= stdioAppendBatchMaxBytes {
-			if err := flush(); err != nil {
-				return err
+	results := make(chan readResult)
+	stopped := make(chan struct{})
+	defer close(stopped)
+	go func() {
+		defer close(results)
+		for {
+			buffer := make([]byte, 32*1024)
+			n, err := input.Read(buffer)
+			if n > 0 || err != nil {
+				select {
+				case results <- readResult{buffer[:n], err}:
+				case <-stopped:
+					return
+				}
+			}
+			if err != nil {
+				return
 			}
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("read stdio input: %w", err)
-	}
-	return flush()
-}
-
-type appendJob struct {
-	ctx   context.Context
-	lines []string
-	done  chan error
-}
-
-type lineAppendWorker struct {
-	sink     port.LineAppender
-	requests chan appendJob
-}
-
-func startLineAppendWorker(sink port.LineAppender) (port.LineAppendWorker, func()) {
-	worker := &lineAppendWorker{
-		sink:     sink,
-		requests: make(chan appendJob),
-	}
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		for request := range worker.requests {
-			request.done <- sink.AppendLines(request.ctx, request.lines)
-			close(request.done)
-		}
 	}()
-	closeWorker := func() {
-		close(worker.requests)
-		<-done
-	}
-	return worker, closeWorker
-}
-
-func (w *lineAppendWorker) Path() string {
-	return w.sink.Path()
-}
-
-func (w *lineAppendWorker) AppendLine(ctx context.Context, line string) error {
-	return w.AppendLines(ctx, []string{line})
-}
-
-func (w *lineAppendWorker) AppendLines(ctx context.Context, lines []string) error {
-	if len(lines) == 0 {
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+	var raw bytes.Buffer
+	var partial []byte
+	batch := make([]string, 0, stdioAppendBatchMaxLines)
+	batchBytes, lines := 0, 0
+	// Once accepted, bytes are drained even when the input context is canceled.
+	writeCtx := context.WithoutCancel(ctx)
+	flush := func() error {
+		if raw.Len() == 0 && len(batch) == 0 {
+			return nil
+		}
+		var err error
+		count := batchBytes
+		if s.rawSink != nil {
+			count = raw.Len()
+			err = s.rawSink.AppendBytes(writeCtx, raw.Bytes())
+		} else {
+			err = s.worker.AppendLines(writeCtx, batch)
+		}
+		if err != nil {
+			return fmt.Errorf("append stdio batch to SOT %q: %w", s.SOTPath, err)
+		}
+		s.publish(int64(count), lines, false, observer)
+		raw.Reset()
+		batch = batch[:0]
+		batchBytes = 0
+		lines = 0
 		return nil
 	}
-	request := appendJob{
-		ctx:   ctx,
-		lines: append([]string(nil), lines...),
-		done:  make(chan error, 1),
+	var readErr error
+	accept := func(data []byte) error {
+		if s.rawSink != nil {
+			for len(data) > 0 {
+				end := min(len(data), stdioAppendBatchMaxBytes-raw.Len())
+				for i, b := range data[:end] {
+					if b == '\n' {
+						lines++
+						if lines == stdioAppendBatchMaxLines {
+							end = i + 1
+							break
+						}
+					}
+				}
+				raw.Write(data[:end])
+				data = data[end:]
+				if raw.Len() == stdioAppendBatchMaxBytes || lines == stdioAppendBatchMaxLines {
+					if err := flush(); err != nil {
+						if readErr != io.EOF {
+							return errors.Join(readErr, err)
+						}
+						return err
+					}
+				}
+			}
+			return nil
+		}
+		for len(data) > 0 {
+			n := bytes.IndexByte(data, '\n')
+			complete := n >= 0
+			if !complete {
+				n = len(data) - 1
+			}
+			part := data[:n+1]
+			data = data[n+1:]
+			partial = append(partial, part...)
+			if complete {
+				batch = append(batch, strings.TrimSuffix(strings.TrimSuffix(string(partial), "\n"), "\r"))
+				batchBytes += len(partial)
+				partial = nil
+			}
+
+			if complete {
+				lines++
+			}
+			if lines >= stdioAppendBatchMaxLines || raw.Len() >= stdioAppendBatchMaxBytes || batchBytes >= stdioAppendBatchMaxBytes {
+				if err := flush(); err != nil {
+					if readErr != io.EOF {
+						return errors.Join(readErr, err)
+					}
+					return err
+				}
+			}
+		}
+		return nil
 	}
-	select {
-	case w.requests <- request:
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-	select {
-	case err := <-request.done:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
+	canceled := ctx.Done()
+	for {
+		select {
+		case result, ok := <-results:
+			if !ok {
+				if len(partial) > 0 {
+					batch = append(batch, string(partial))
+					batchBytes += len(partial)
+				}
+				if err := flush(); err != nil {
+					if readErr != io.EOF {
+						return errors.Join(readErr, err)
+					}
+					return err
+				}
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+				if readErr == nil || readErr == io.EOF {
+					s.publish(0, 0, true, nil)
+					return nil
+				}
+				return fmt.Errorf("read stdio input: %w", readErr)
+			}
+			if result.err != nil {
+				readErr = result.err
+			}
+			if err := accept(result.data); err != nil {
+				stopRead()
+				return err
+			}
+			if result.err != nil {
+				readErr = result.err
+			}
+		case <-ticker.C:
+			if err := flush(); err != nil {
+				stopRead()
+				return err
+			}
+		case <-canceled:
+			canceled = nil
+			stopRead()
+			if !interruptible {
+				if err := flush(); err != nil {
+					return err
+				}
+				return ctx.Err()
+			}
+		}
 	}
 }
 
@@ -223,4 +375,11 @@ func resolveOutPath(request InputRequest) string {
 		workDir = "."
 	}
 	return filepath.Join(workDir, "logsee-"+now.Format("20060102-150405")+".log")
+}
+
+func (s InputSession) PublishedLimit() (int64, bool) {
+	if s.progress == nil {
+		return 0, false
+	}
+	return s.Progress().PublishedBytes, true
 }

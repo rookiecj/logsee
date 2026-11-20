@@ -1,8 +1,8 @@
 package app
 
 import (
-	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +22,7 @@ const (
 	defaultFrameWidth    = 120
 	defaultFrameHeight   = 24
 	unboundedRecordLimit = 0
+	asyncRecordLimit     = -1
 )
 
 type RunOptions struct {
@@ -36,7 +37,7 @@ type RunOptions struct {
 	Clipboard    port.ClipboardWriter
 }
 
-func Run(ctx context.Context, options cli.Options, stdin io.Reader, stdout io.Writer, runOptions RunOptions) error {
+func Run(ctx context.Context, options cli.Options, stdin io.Reader, stdout io.Writer, runOptions RunOptions) (runErr error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -79,16 +80,26 @@ func Run(ctx context.Context, options cli.Options, stdin io.Reader, stdout io.Wr
 	}
 	defer closeInput()
 
+	configured, err := sessionLogTypeConfig(options, homeDir)
+	if err != nil {
+		return err
+	}
+	session.LogTypeConfig = configured
 	var stream *stdioStream
 	if session.Mode == usecase.InputModeStdio {
 		if runOptions.Interactive {
 			stream = startStdioStream(ctx, session, stdin)
+			defer func() {
+				if err := stream.stop(); err != nil && !errors.Is(err, context.Canceled) {
+					runErr = errors.Join(runErr, err)
+				}
+			}()
 		} else if err := session.ConsumeStdio(ctx, stdin, nil); err != nil {
 			return err
 		}
 	}
 
-	logType, err := resolveSessionLogType(ctx, session, options, homeDir)
+	logType, err := session.DetectLogType(ctx, configured)
 	if err != nil {
 		return err
 	}
@@ -128,9 +139,10 @@ func openInputSession(request usecase.InputRequest) (usecase.InputSession, strin
 		closeInput := func() {
 			_ = appendFile.Close()
 		}
-		source := filesystem.NewFileSource(outPath)
+		var session usecase.InputSession
+		source := filesystem.NewFileSource(outPath).WithLimit(func() int64 { return session.Progress().PublishedBytes })
 		request.OutPath = outPath
-		session, err := usecase.NewInputSession(request, usecase.InputPorts{
+		session, err = usecase.NewInputSession(request, usecase.InputPorts{
 			StdioSink:  appendFile,
 			FileSource: source,
 		})
@@ -160,6 +172,7 @@ type stdioStream struct {
 	refresh <-chan struct{}
 	done    <-chan error
 	cancel  context.CancelFunc
+	stop    func() error
 }
 
 func startStdioStream(ctx context.Context, session usecase.InputSession, stdin io.Reader) *stdioStream {
@@ -167,15 +180,20 @@ func startStdioStream(ctx context.Context, session usecase.InputSession, stdin i
 	refresh := make(chan struct{}, 1)
 	done := make(chan error, 1)
 	observer := sourceRefreshObserver{refresh: refresh}
+	exited := make(chan struct{})
+	var consumeErr error
 	go func() {
 		defer close(refresh)
-		done <- session.ConsumeStdio(streamCtx, stdin, observer)
+		defer close(exited)
+		consumeErr = session.ConsumeStdio(streamCtx, stdin, observer)
+		done <- consumeErr
 		close(done)
 	}()
 	return &stdioStream{
 		refresh: refresh,
 		done:    done,
 		cancel:  cancel,
+		stop:    func() error { cancel(); <-exited; return consumeErr },
 	}
 }
 
@@ -190,21 +208,25 @@ func (o sourceRefreshObserver) SourceLineAvailable(string) {
 	}
 }
 
-func resolveSessionLogType(ctx context.Context, session usecase.InputSession, options cli.Options, homeDir string) (usecase.LogType, error) {
+func sessionLogTypeConfig(options cli.Options, homeDir string) (usecase.LogTypeConfig, error) {
 	configPath := config.ResolveConfigPath(options.ConfigPath, homeDir)
+	if options.ConfigPath != "" {
+		if _, err := os.Stat(configPath); err != nil {
+			return usecase.LogTypeConfig{}, err
+		}
+	}
 	configured, err := config.LoadLogTypeConfig(configPath)
 	if err != nil {
-		return "", err
+		return usecase.LogTypeConfig{}, err
 	}
-	resolved, err := usecase.ResolveLogTypeConfig(usecase.LogType(options.LogType), configured)
+	return usecase.ResolveLogTypeConfig(usecase.LogType(options.LogType), configured)
+}
+func resolveSessionLogType(ctx context.Context, session usecase.InputSession, options cli.Options, homeDir string) (usecase.LogType, error) {
+	configured, err := sessionLogTypeConfig(options, homeDir)
 	if err != nil {
 		return "", err
 	}
-	logType, err := session.DetectLogType(ctx, resolved)
-	if err != nil {
-		return "", err
-	}
-	return logType, nil
+	return session.DetectLogType(ctx, configured)
 }
 
 func buildInitialFrame(ctx context.Context, session usecase.InputSession, sourcePath string, logType usecase.LogType, width, height int, homeDir string) (tui.Frame, error) {
@@ -241,8 +263,14 @@ func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath 
 	var outputRecords []usecase.OutputLogRecord
 	var totalRawLines int
 	var outputCount int
-	if usesIndexedSourceWindow(session, recordLimit) {
-		index, err := buildFileLineIndex(ctx, sourcePath)
+	if recordLimit == asyncRecordLimit {
+		lineIndex = &fileLineIndex{}
+	} else if usesIndexedSourceWindow(session, recordLimit) {
+		size, err := readableSize(session, sourcePath)
+		if err != nil {
+			return nil, err
+		}
+		index, err := buildFileLineIndexLimit(ctx, sourcePath, size)
 		if err != nil {
 			return nil, err
 		}
@@ -272,6 +300,8 @@ func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath 
 		return nil, err
 	}
 	state := &loopState{
+		background:    recordLimit == asyncRecordLimit,
+		counting:      recordLimit == asyncRecordLimit,
 		width:         width,
 		height:        height,
 		listHeight:    listHeight,
@@ -290,6 +320,7 @@ func newLoopState(ctx context.Context, session usecase.InputSession, sourcePath 
 		bookmarks:     usecase.NewBookmarkState(),
 		selection:     usecase.NewSelectionState(),
 	}
+	state.sourceInfo, _ = os.Stat(sourcePath)
 	if err := state.loadPersistedInputHistory(); err != nil {
 		return nil, err
 	}
@@ -312,6 +343,15 @@ const (
 )
 
 type loopState struct {
+	pendingRangeActive                        bool
+	pendingSelectionOps                       []selectionOperation
+	intentRevision                            uint64
+	pendingAnchorOutput                       int
+	background, counting                      bool
+	pendingCopy, pendingSelect, pendingSearch bool
+	pendingAnchor                             int
+	pendingDirection                          usecase.SearchDirection
+
 	width      int
 	height     int
 	listHeight int
@@ -326,10 +366,12 @@ type loopState struct {
 	records []usecase.OutputLogRecord
 	filter  usecase.CompiledFilter
 
+	sourceInfo             os.FileInfo
 	lineIndex              *fileLineIndex
 	windowStartOutputIndex int
 	filteredOutputCount    int
 	filteredSourceSize     int64
+	filterRevision         uint64
 
 	filterText        string
 	filterEditingText string
@@ -355,6 +397,7 @@ type loopState struct {
 	helpOpen            bool
 	helpScrollOffset    int
 	wrap                bool
+	wrapOffset          int
 	horizontalOffset    int
 
 	readState               tui.ReadState
@@ -385,6 +428,7 @@ func (s *loopState) renderFrame() tui.Frame {
 		Status: tui.StatusModel{
 			CursorRawLine: cursorRawLine,
 			TotalRawLines: s.totalRawLines,
+			Counting:      s.counting,
 			InputMode:     tuiInputMode(s.session.Mode),
 			ReadState:     s.readState,
 			LogType:       s.logType,
@@ -465,6 +509,7 @@ func (s *loopState) visibleLogLines() []tui.LogLineModel {
 			Highlights:    matcher.HighlightRanges(record.Text),
 			Selected:      s.selectionKind(record.RawLineNumber),
 			Cursor:        outputIndex == cursorOutputIndex,
+			WrapOffset:    s.wrapOffset,
 		})
 	}
 	return logs
@@ -499,8 +544,8 @@ func (s *loopState) applyFilterEditingText() bool {
 	var filteredWindow filteredOutputWindow
 	filterText := s.filterEditingText
 	filterActive := strings.TrimSpace(filterText) != ""
-	if s.lineIndex != nil && filterActive {
-		filteredWindow, err = scanFilteredOutputWindow(context.Background(), s.sourcePath, filter, 0, usecase.DefaultOutputLogCacheCapacity)
+	if s.lineIndex != nil && filterActive && !s.background {
+		filteredWindow, err = scanIndexedFilter(context.Background(), *s.lineIndex, filter, 0, usecase.DefaultOutputLogCacheCapacity, s.filterRevision+1)
 		if err != nil {
 			s.filterError = err.Error()
 			return true
@@ -510,6 +555,8 @@ func (s *loopState) applyFilterEditingText() bool {
 	s.filterText = s.filterEditingText
 	s.filterError = ""
 	s.filter = filter
+	s.filterRevision++
+	s.counting = s.background
 	s.clearSelectionMode()
 	if s.fileWindowActive() {
 		s.rawLogs = nil
@@ -563,6 +610,8 @@ func (s *loopState) selectionKind(rawLineNumber int) tui.SelectionKind {
 }
 
 func (s *loopState) applySearchEditingText() bool {
+	s.intentRevision++
+	s.pendingSearch = false
 	s.searchText = s.searchEditingText
 	if strings.TrimSpace(s.searchText) == "" {
 		s.searchText = ""
@@ -615,6 +664,7 @@ func (s *loopState) filterOptions() usecase.FilterOptions {
 }
 
 func (s *loopState) resize(width, height int) {
+	s.wrapOffset = 0
 	if width > 0 {
 		s.width = width
 	}
@@ -642,6 +692,43 @@ func (s *loopState) resize(width, height int) {
 }
 
 func (s *loopState) refreshFromSOT(ctx context.Context) (bool, error) {
+	if s.background {
+		return false, nil
+	}
+	if s.logType == usecase.LogTypeAuto {
+		detected, err := s.session.DetectLogType(ctx, s.session.LogTypeConfig)
+		if err != nil {
+			return false, err
+		}
+		if detected != usecase.LogTypeAuto {
+			s.logType = detected
+			s.filter, err = usecase.CompileFilter(s.filterText, s.filterOptions())
+			if err != nil {
+				return false, err
+			}
+			s.filteredSourceSize = -1
+			s.filterRevision++
+		}
+	}
+	info, err := os.Stat(s.sourcePath)
+	if err != nil {
+		return false, fmt.Errorf("refresh SOT: stat rendered SOT: %w", err)
+	}
+	replaced := s.sourceInfo != nil && (!os.SameFile(s.sourceInfo, info) || info.Size() < s.sourceInfo.Size() || info.Size() == s.sourceInfo.Size() && !info.ModTime().Equal(s.sourceInfo.ModTime()))
+	s.sourceInfo = info
+	if replaced && s.lineIndex != nil {
+		index, err := buildFileLineIndex(ctx, s.sourcePath)
+		if err != nil {
+			return false, err
+		}
+		s.lineIndex = &index
+		s.filteredSourceSize = -1
+		s.clearSelectionMode()
+		s.bookmarks = usecase.NewBookmarkState()
+		s.totalRawLines = index.totalLines()
+		s.resetNavigation()
+	}
+
 	if s.fileWindowActive() {
 		changed, err := s.refreshFileWindow(ctx)
 		if err != nil {
@@ -740,7 +827,7 @@ func (s *loopState) filteredViewportCached() bool {
 
 func (s *loopState) refreshFileWindow(ctx context.Context) (bool, error) {
 	changed := false
-	size, err := sourceFileSize(s.sourcePath)
+	size, err := readableSize(s.session, s.sourcePath)
 	if err != nil {
 		return false, fmt.Errorf("refresh file window: %w", err)
 	}
@@ -749,11 +836,11 @@ func (s *loopState) refreshFileWindow(ctx context.Context) (bool, error) {
 		var err error
 		switch {
 		case s.lineIndex == nil:
-			index, err = buildFileLineIndex(ctx, s.sourcePath)
+			index, err = buildFileLineIndexLimit(ctx, s.sourcePath, size)
 		case size < s.lineIndex.size:
-			index, err = buildFileLineIndex(ctx, s.sourcePath)
+			index, err = buildFileLineIndexLimit(ctx, s.sourcePath, size)
 		default:
-			index, err = extendFileLineIndex(ctx, s.sourcePath, *s.lineIndex)
+			index, err = extendFileLineIndexLimit(ctx, *s.lineIndex, size)
 		}
 		if err != nil {
 			return false, fmt.Errorf("refresh file index: %w", err)
@@ -793,7 +880,7 @@ func (s *loopState) refreshFileWindow(ctx context.Context) (bool, error) {
 
 func (s *loopState) refreshFilteredWindow(ctx context.Context) (bool, error) {
 	if s.filteredViewportCached() {
-		size, err := sourceFileSize(s.sourcePath)
+		size, err := readableSize(s.session, s.sourcePath)
 		if err != nil {
 			return false, fmt.Errorf("refresh filtered window: %w", err)
 		}
@@ -802,8 +889,19 @@ func (s *loopState) refreshFilteredWindow(ctx context.Context) (bool, error) {
 		}
 	}
 
+	size, err := readableSize(s.session, s.sourcePath)
+	if err != nil {
+		return false, err
+	}
+	if size != s.lineIndex.size {
+		index, err := extendFileLineIndexLimit(ctx, *s.lineIndex, size)
+		if err != nil {
+			return false, err
+		}
+		s.lineIndex = &index
+	}
 	start := s.navigation.ScrollOffset()
-	window, err := scanFilteredOutputWindow(ctx, s.sourcePath, s.filter, start, usecase.DefaultOutputLogCacheCapacity)
+	window, err := scanIndexedFilter(ctx, *s.lineIndex, s.filter, start, usecase.DefaultOutputLogCacheCapacity, s.filterRevision)
 	if err != nil {
 		return false, fmt.Errorf("refresh filtered window: %w", err)
 	}
@@ -829,7 +927,7 @@ func (s *loopState) refreshFilteredWindow(ctx context.Context) (bool, error) {
 	}
 
 	if nextStart := s.navigation.ScrollOffset(); nextStart != start {
-		window, err = scanFilteredOutputWindow(ctx, s.sourcePath, s.filter, nextStart, usecase.DefaultOutputLogCacheCapacity)
+		window, err = scanIndexedFilter(ctx, *s.lineIndex, s.filter, nextStart, usecase.DefaultOutputLogCacheCapacity, s.filterRevision)
 		if err != nil {
 			return false, fmt.Errorf("refresh filtered window: %w", err)
 		}
@@ -874,33 +972,21 @@ func sameOutputRecords(left, right []usecase.OutputLogRecord) bool {
 }
 
 func readInitialRawLogs(ctx context.Context, path string, limit int) ([]usecase.RawLogLine, int, error) {
-	file, err := os.Open(path)
+	index, err := buildFileLineIndex(ctx, path)
 	if err != nil {
-		return nil, 0, fmt.Errorf("open rendered SOT %q: %w", path, err)
+		return nil, 0, err
 	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	total := 0
-	rawLogs := []usecase.RawLogLine{}
-	for scanner.Scan() {
-		select {
-		case <-ctx.Done():
-			return nil, 0, ctx.Err()
-		default:
-		}
-		total++
-		if limit <= 0 || len(rawLogs) < limit {
-			rawLogs = append(rawLogs, usecase.RawLogLine{
-				RawLineNumber: total,
-				Text:          scanner.Text(),
-			})
-		}
+	if limit <= 0 {
+		limit = index.totalLines()
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, 0, fmt.Errorf("read rendered SOT %q: %w", path, err)
+	rows, err := readRawLogWindow(ctx, path, index, 0, limit)
+	return rows, index.totalLines(), err
+}
+func readableSize(session usecase.InputSession, path string) (int64, error) {
+	if limit, ok := session.PublishedLimit(); ok {
+		return limit, nil
 	}
-	return rawLogs, total, nil
+	return sourceFileSize(path)
 }
 
 func tuiInputMode(mode usecase.InputMode) tui.InputMode {

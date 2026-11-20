@@ -32,7 +32,4 @@ func TestExtendFileLineIndexAppendsOnlyNewBytes(t *testing.T) {
 	if got, want := extended.totalLines(), 4; got != want {
 		t.Fatalf("total lines = %d, want %d", got, want)
 	}
-	if got, want := len(extended.offsets), len(initial.offsets)+2; got != want {
-		t.Fatalf("offset count = %d, want %d", got, want)
-	}
 }

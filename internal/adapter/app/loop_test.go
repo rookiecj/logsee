@@ -1159,7 +1159,7 @@ func TestInteractiveLoopModeStackEscPopsSelectionThenSearch(t *testing.T) {
 	}
 }
 
-func TestInteractiveLoopModeStackEscPopsSearchBeforeSelection(t *testing.T) {
+func TestInteractiveLoopSearchEntryClearsSelection(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 
 	var stdout bytes.Buffer
@@ -1176,7 +1176,6 @@ func TestInteractiveLoopModeStackEscPopsSearchBeforeSelection(t *testing.T) {
 	frame := lastRenderedFrame(stdout.String())
 	for _, want := range []string{
 		"search:\n",
-		"sel:2",
 	} {
 		if !strings.Contains(frame, want) {
 			t.Fatalf("final frame %q does not contain %q", frame, want)
@@ -1619,18 +1618,24 @@ func TestRunInteractiveSTDIOStreamsNewLinesThroughSOTBeforeRedraw(t *testing.T) 
 	dir := t.TempDir()
 	outPath := filepath.Join(dir, "session.log")
 	stdin := newControlledReader()
+	var stdout frameSignalWriter
+	stdout.ready = make(chan struct{})
 	keyInput := &scriptedReader{
 		data: []byte("q"),
 		before: map[int]func() error{
 			0: func() error {
 				stdin.WriteString("alpha\nbeta\n")
 				stdin.Close()
-				return waitForFileContent(outPath, "alpha\nbeta\n")
+				select {
+				case <-stdout.ready:
+					return nil
+				case <-time.After(time.Second):
+					return fmt.Errorf("stream frame not rendered")
+				}
 			},
 		},
 	}
 
-	var stdout bytes.Buffer
 	err := Run(context.Background(), cli.Options{
 		InputPath: "-",
 		OutPath:   outPath,
@@ -2025,3 +2030,24 @@ func lastRenderedFrame(output string) string {
 	}
 	return prefixed[index+1:]
 }
+
+type frameSignalWriter struct {
+	needle string
+	bytes.Buffer
+	ready    chan struct{}
+	signaled bool
+}
+
+func (w *frameSignalWriter) Write(p []byte) (int, error) {
+	n, e := w.Buffer.Write(p)
+	needle := w.needle
+	if needle == "" {
+		needle = "2   beta\n"
+	}
+	if !w.signaled && strings.Contains(w.Buffer.String(), needle) {
+		w.signaled = true
+		close(w.ready)
+	}
+	return n, e
+}
+func (w *frameSignalWriter) WriteString(text string) (int, error) { return w.Write([]byte(text)) }

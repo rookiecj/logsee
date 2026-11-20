@@ -278,3 +278,68 @@ func copyResultMessage(count int) string {
 		return fmt.Sprintf("%d lines copied", count)
 	}
 }
+
+// CopySelectedFromSource resolves selection against the SOT, independently of the viewport.
+func CopySelectedFromSource(ctx context.Context, clipboard port.ClipboardWriter, source port.SelectedLineSource, filter CompiledFilter, selection *SelectionState, cursor int) CopyTextResult {
+	first, last := cursor, cursor
+	picked := selection.PickedLines()
+	if len(picked) > 0 {
+		first, last = picked[0], picked[len(picked)-1]
+	}
+	if r, ok := selection.Range(); ok {
+		a, b := normalizeRawLineRange(r)
+		if len(picked) == 0 {
+			first, last = a, b
+		} else {
+			first = min(first, a)
+			last = max(last, b)
+		}
+	}
+	result := CopyTextResult{Message: "no lines"}
+	if first < 1 {
+		return result
+	}
+	var text strings.Builder
+	err := source.WalkLines(ctx, first, last, func(n int, line string) error {
+		wanted := !selection.HasSelection() && n == cursor || selection.IsPicked(n) || selection.IsRangeSelected(n) && filter.Match(line)
+		if wanted {
+			if result.LineCount > 0 {
+				text.WriteByte('\n')
+			}
+			text.WriteString(line)
+			result.LineCount++
+		}
+		return nil
+	})
+	if err != nil {
+		result.Err = err
+		result.Message = "copy error: " + err.Error()
+		return result
+	}
+	result.Text = text.String()
+	result.Message = copyResultMessage(result.LineCount)
+	if result.LineCount == 0 {
+		return result
+	}
+	if clipboard == nil {
+		err = fmt.Errorf("clipboard writer is required")
+	} else {
+		err = clipboard.WriteText(ctx, result.Text)
+	}
+	if err != nil {
+		result.Err = err
+		result.Message = "clipboard error"
+	}
+	return result
+}
+
+func (s *SelectionState) Clone() *SelectionState {
+	if s == nil {
+		return NewSelectionState()
+	}
+	copy := &SelectionState{rangeAnchor: s.rangeAnchor, rangeCursor: s.rangeCursor, picked: make(map[int]struct{}, len(s.picked))}
+	for n := range s.picked {
+		copy.picked[n] = struct{}{}
+	}
+	return copy
+}

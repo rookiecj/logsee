@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 )
@@ -38,10 +39,30 @@ func (f *AppendFile) AppendLines(_ context.Context, lines []string) error {
 		builder.WriteString(line)
 		builder.WriteByte('\n')
 	}
-	if _, err := f.file.WriteString(builder.String()); err != nil {
-		return fmt.Errorf("write lines: %w", err)
+	return f.AppendBytes(context.Background(), []byte(builder.String()))
+}
+func (f *AppendFile) AppendBytes(ctx context.Context, data []byte) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	n, err := f.file.Write(data)
+	if err != nil {
+		return fmt.Errorf("write SOT: %w", err)
+	}
+	if n != len(data) {
+		return io.ErrShortWrite
+	}
+	if err := f.file.Sync(); err != nil {
+		return fmt.Errorf("sync SOT: %w", err)
 	}
 	return nil
+}
+func (f *AppendFile) Size(context.Context) (int64, error) {
+	info, err := f.file.Stat()
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), nil
 }
 
 func (f *AppendFile) Close() error {
@@ -52,13 +73,22 @@ func (f *AppendFile) Close() error {
 }
 
 type FileSource struct {
-	path string
+	path         string
+	limit        func() int64
+	completeOnly bool
 }
 
 func NewFileSource(path string) FileSource {
 	return FileSource{path: path}
 }
 
+func (s FileSource) WithLimit(limit func() int64) FileSource { s.limit = limit; return s }
+func (s FileSource) reader(file *os.File) io.Reader {
+	if s.limit != nil {
+		return io.LimitReader(file, s.limit())
+	}
+	return file
+}
 func (s FileSource) Path() string {
 	return s.path
 }
@@ -73,21 +103,27 @@ func (s FileSource) ReadLine(_ context.Context, lineNumber int) (string, error) 
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	reader := bufio.NewReader(s.reader(file))
 	current := 0
-	for scanner.Scan() {
+	for {
+		line, readErr := reader.ReadString('\n')
+		if len(line) == 0 {
+			if readErr != nil && readErr != io.EOF {
+				return "", readErr
+			}
+			break
+		}
+		line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
 		current++
 		if current == lineNumber {
-			return scanner.Text(), nil
+			return line, nil
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("read SOT source %q: %w", s.path, err)
-	}
+
 	return "", fmt.Errorf("line %d not found in SOT source %q", lineNumber, s.path)
 }
 
-func (s FileSource) SampleLines(_ context.Context, maxNonEmpty int) ([]string, error) {
+func (s FileSource) SampleLines(ctx context.Context, maxNonEmpty int) ([]string, error) {
 	if maxNonEmpty < 1 {
 		return nil, fmt.Errorf("max non-empty sample lines must be 1 or greater")
 	}
@@ -97,10 +133,23 @@ func (s FileSource) SampleLines(_ context.Context, maxNonEmpty int) ([]string, e
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	reader := bufio.NewReader(s.reader(file))
 	lines := []string{}
-	for scanner.Scan() {
-		line := scanner.Text()
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		line, readErr := reader.ReadString('\n')
+		if len(line) == 0 {
+			if readErr != nil && readErr != io.EOF {
+				return nil, readErr
+			}
+			break
+		}
+		if s.completeOnly && !strings.HasSuffix(line, "\n") {
+			break
+		}
+		line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
 		if line == "" {
 			continue
 		}
@@ -109,21 +158,28 @@ func (s FileSource) SampleLines(_ context.Context, maxNonEmpty int) ([]string, e
 			break
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("read SOT source %q: %w", s.path, err)
-	}
+
 	return lines, nil
 }
 
-func (s FileSource) Size(_ context.Context) (int64, error) {
+func (s FileSource) Size(ctx context.Context) (int64, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
 	info, err := os.Stat(s.path)
 	if err != nil {
 		return 0, fmt.Errorf("stat SOT source %q: %w", s.path, err)
 	}
+	if s.limit != nil {
+		return min(info.Size(), s.limit()), nil
+	}
 	return info.Size(), nil
 }
 
-func (s FileSource) ReadAt(_ context.Context, offset int64, size int) ([]byte, error) {
+func (s FileSource) ReadAt(ctx context.Context, offset int64, size int) ([]byte, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if offset < 0 {
 		return nil, fmt.Errorf("offset must be 0 or greater")
 	}
@@ -136,10 +192,21 @@ func (s FileSource) ReadAt(_ context.Context, offset int64, size int) ([]byte, e
 	}
 	defer file.Close()
 
+	if s.limit != nil {
+		size = int(min(int64(size), max(0, s.limit()-offset)))
+	}
 	buffer := make([]byte, size)
 	n, err := file.ReadAt(buffer, offset)
+	if canceled := ctx.Err(); canceled != nil {
+		return nil, canceled
+	}
 	if err != nil && n == 0 {
 		return nil, fmt.Errorf("read SOT source %q at offset %d: %w", s.path, offset, err)
 	}
 	return buffer[:n], nil
+}
+
+func (s FileSource) SampleCompleteLines(ctx context.Context, max int) ([]string, error) {
+	s.completeOnly = true
+	return s.SampleLines(ctx, max)
 }
