@@ -126,13 +126,23 @@ func TestRunInteractiveUsesBubbleTeaRuntimeWhenRequested(t *testing.T) {
 		t.Fatalf("write log file: %v", err)
 	}
 
-	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(""), &stdout, RunOptions{
+	stdout := frameSignalWriter{ready: make(chan struct{}), needle: "second"}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	keys := &scriptedReader{data: []byte("q"), before: map[int]func() error{0: func() error {
+		select {
+		case <-stdout.ready:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}}}
+	err := Run(ctx, cli.Options{InputPath: logPath}, strings.NewReader(""), &stdout, RunOptions{
 		Width:        120,
 		Height:       6,
 		HomeDir:      t.TempDir(),
 		Interactive:  true,
-		KeyInput:     strings.NewReader("q"),
+		KeyInput:     keys,
 		UseBubbleTea: true,
 	})
 	if err != nil {

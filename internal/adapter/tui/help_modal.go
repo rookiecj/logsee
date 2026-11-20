@@ -5,13 +5,13 @@ import "strings"
 func helpContentLines() []string {
 	return []string{
 		"Movement: j/k, Up/Down, PageUp/PageDown, Ctrl+F/Ctrl+B, Home/End",
-		"Follow: G last line + follow on; k/Up/PgUp/p move up stops follow",
+		"Follow: G last line + follow on; k/Up/PgUp move up stops follow; n/p search stops follow",
 		"Search match: n/p or Ctrl+N/Ctrl+P next/previous match line",
 		"Filter: : open; Enter apply; Esc cancel edit; Down history",
 		"Search: / open; Enter apply; Esc cancel edit; Down history; Up to filter",
 		"Bookmarks: m toggle line; 1-9 jump to visible bookmark slot",
 		"Wrap: w toggle; h/l scroll log body left/right when wrap is off",
-		"Selection: Shift+Up/Down extend range; Space pick line; c copy",
+		"Selection: Shift+Up/Down/Home/End extend range; Space pick line; c copy",
 		"Modes: Esc pops search/selection stack; help open Esc closes help only",
 		"Help: F1 from any focus; ? from log list; Esc/F1/? close help",
 		"Quit: q on log list; Ctrl+C anywhere",

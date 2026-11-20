@@ -1,109 +1,62 @@
 package app
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"strings"
-
+	"logsee/internal/adapter/filesystem"
+	"logsee/internal/port"
 	"logsee/internal/usecase"
+	"os"
 )
 
 type fileLineIndex struct {
-	offsets []int64
-	size    int64
+	source   *usecase.LogSource
+	snapshot port.LogSnapshot
+	size     int64
+	total    int
+	filtered *usecase.FilteredSource
 }
-
 type filteredOutputWindow struct {
-	records          []usecase.OutputLogRecord
-	startOutputIndex int
-	totalMatches     int
-	totalRawLines    int
-	fileSize         int64
+	records                                       []usecase.OutputLogRecord
+	startOutputIndex, totalMatches, totalRawLines int
+	fileSize                                      int64
 }
 
 func buildFileLineIndex(ctx context.Context, path string) (fileLineIndex, error) {
-	file, err := os.Open(path)
+	size, err := sourceFileSize(path)
 	if err != nil {
-		return fileLineIndex{}, fmt.Errorf("open rendered SOT %q: %w", path, err)
+		return fileLineIndex{}, err
 	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	var offsets []int64
-	var offset int64
-	for {
-		select {
-		case <-ctx.Done():
-			return fileLineIndex{}, ctx.Err()
-		default:
-		}
-
-		lineStart := offset
-		line, err := reader.ReadString('\n')
-		if len(line) > 0 {
-			offsets = append(offsets, lineStart)
-			offset += int64(len(line))
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fileLineIndex{}, fmt.Errorf("index rendered SOT %q: %w", path, err)
-		}
-	}
-
-	return fileLineIndex{offsets: offsets, size: offset}, nil
+	return buildFileLineIndexLimit(ctx, path, size)
 }
-
+func buildFileLineIndexLimit(ctx context.Context, path string, size int64) (fileLineIndex, error) {
+	source, err := usecase.NewLogSource(filesystem.NewFileSource(path))
+	if err != nil {
+		return fileLineIndex{}, err
+	}
+	index := fileLineIndex{source: source, snapshot: port.LogSnapshot{Generation: 1, ByteLimit: size}, size: size}
+	index.total, err = source.Refresh(ctx, index.snapshot)
+	index.filtered = usecase.NewFilteredSource(source)
+	return index, err
+}
 func extendFileLineIndex(ctx context.Context, path string, index fileLineIndex) (fileLineIndex, error) {
-	if index.size == 0 {
-		return buildFileLineIndex(ctx, path)
-	}
-
-	file, err := os.Open(path)
+	size, err := sourceFileSize(path)
 	if err != nil {
-		return fileLineIndex{}, fmt.Errorf("open rendered SOT %q: %w", path, err)
+		return index, err
 	}
-	defer file.Close()
-
-	if _, err := file.Seek(index.size, io.SeekStart); err != nil {
-		return fileLineIndex{}, fmt.Errorf("seek rendered SOT %q: %w", path, err)
-	}
-
-	reader := bufio.NewReader(file)
-	offsets := append([]int64(nil), index.offsets...)
-	offset := index.size
-	for {
-		select {
-		case <-ctx.Done():
-			return fileLineIndex{}, ctx.Err()
-		default:
-		}
-
-		lineStart := offset
-		line, err := reader.ReadString('\n')
-		if len(line) > 0 {
-			offsets = append(offsets, lineStart)
-			offset += int64(len(line))
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fileLineIndex{}, fmt.Errorf("extend index rendered SOT %q: %w", path, err)
-		}
-	}
-
-	return fileLineIndex{offsets: offsets, size: offset}, nil
+	return extendFileLineIndexLimit(ctx, index, size)
 }
-
-func (i fileLineIndex) totalLines() int {
-	return len(i.offsets)
+func extendFileLineIndexLimit(ctx context.Context, index fileLineIndex, size int64) (fileLineIndex, error) {
+	if size < index.size {
+		index.snapshot.Generation++
+	}
+	index.snapshot.ByteLimit = size
+	index.size = size
+	total, err := index.source.Refresh(ctx, index.snapshot)
+	index.total = total
+	return index, err
 }
-
+func (i fileLineIndex) totalLines() int { return i.total }
 func sourceFileSize(path string) (int64, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -111,253 +64,44 @@ func sourceFileSize(path string) (int64, error) {
 	}
 	return info.Size(), nil
 }
-
-func readRawLogWindow(ctx context.Context, path string, index fileLineIndex, startOutputIndex int, count int) ([]usecase.RawLogLine, error) {
-	if count <= 0 || index.totalLines() == 0 {
+func readRawLogWindow(ctx context.Context, _ string, index fileLineIndex, start, count int) ([]usecase.RawLogLine, error) {
+	if count <= 0 {
 		return nil, nil
 	}
-	if startOutputIndex < 0 {
-		startOutputIndex = 0
-	}
-	if startOutputIndex >= index.totalLines() {
-		return nil, nil
-	}
-
-	endOutputIndex := startOutputIndex + count
-	if endOutputIndex > index.totalLines() {
-		endOutputIndex = index.totalLines()
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("open windowed SOT %q: %w", path, err)
-	}
-	defer file.Close()
-
-	if _, err := file.Seek(index.offsets[startOutputIndex], io.SeekStart); err != nil {
-		return nil, fmt.Errorf("seek windowed SOT %q: %w", path, err)
-	}
-
-	reader := bufio.NewReader(file)
-	lines := make([]usecase.RawLogLine, 0, endOutputIndex-startOutputIndex)
-	for outputIndex := startOutputIndex; outputIndex < endOutputIndex; outputIndex++ {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
-
-		text, err := reader.ReadString('\n')
-		if len(text) > 0 {
-			text = strings.TrimSuffix(text, "\n")
-			lines = append(lines, usecase.RawLogLine{
-				RawLineNumber: outputIndex + 1,
-				Text:          text,
-			})
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("read windowed SOT %q: %w", path, err)
-		}
-	}
-	return lines, nil
+	var logs []usecase.RawLogLine
+	err := index.source.WalkLines(ctx, index.snapshot, max(0, start)+1, max(0, start)+count, func(n int, text string) error {
+		logs = append(logs, usecase.RawLogLine{RawLineNumber: n, Text: text})
+		return nil
+	})
+	return logs, err
 }
 
-func findRawSearchMatch(ctx context.Context, path string, index fileLineIndex, matcher usecase.SearchMatcher, currentOutputIndex int, direction usecase.SearchDirection) (int, bool, error) {
-	totalLines := index.totalLines()
-	if totalLines == 0 {
-		return currentOutputIndex, false, nil
-	}
-	if currentOutputIndex < 0 {
-		currentOutputIndex = 0
-	}
-	if currentOutputIndex >= totalLines {
-		currentOutputIndex = totalLines - 1
-	}
-	if direction == usecase.SearchDirectionPrevious {
-		return findPreviousRawSearchMatch(ctx, path, index, matcher, currentOutputIndex)
-	}
-	return findNextRawSearchMatch(ctx, path, index, matcher, currentOutputIndex)
+type selectedFileLines struct {
+	path  string
+	index fileLineIndex
 }
 
-func findNextRawSearchMatch(ctx context.Context, path string, index fileLineIndex, matcher usecase.SearchMatcher, currentOutputIndex int) (int, bool, error) {
-	startOutputIndex := currentOutputIndex + 1
-	if startOutputIndex >= index.totalLines() {
-		return currentOutputIndex, false, nil
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return currentOutputIndex, false, fmt.Errorf("open search SOT %q: %w", path, err)
-	}
-	defer file.Close()
-
-	if _, err := file.Seek(index.offsets[startOutputIndex], io.SeekStart); err != nil {
-		return currentOutputIndex, false, fmt.Errorf("seek search SOT %q: %w", path, err)
-	}
-
-	reader := bufio.NewReader(file)
-	for outputIndex := startOutputIndex; outputIndex < index.totalLines(); outputIndex++ {
-		select {
-		case <-ctx.Done():
-			return currentOutputIndex, false, ctx.Err()
-		default:
-		}
-
-		text, err := reader.ReadString('\n')
-		if len(text) > 0 {
-			text = strings.TrimSuffix(text, "\n")
-			if matcher.Match(text) {
-				return outputIndex, true, nil
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return currentOutputIndex, false, fmt.Errorf("read search SOT %q: %w", path, err)
-		}
-	}
-	return currentOutputIndex, false, nil
+func (s selectedFileLines) WalkLines(ctx context.Context, first, last int, visit func(int, string) error) error {
+	return s.index.source.WalkLines(ctx, s.index.snapshot, first, last, visit)
 }
-
-func findPreviousRawSearchMatch(ctx context.Context, path string, index fileLineIndex, matcher usecase.SearchMatcher, currentOutputIndex int) (int, bool, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return currentOutputIndex, false, fmt.Errorf("open search SOT %q: %w", path, err)
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	for outputIndex := currentOutputIndex - 1; outputIndex >= 0; outputIndex-- {
-		select {
-		case <-ctx.Done():
-			return currentOutputIndex, false, ctx.Err()
-		default:
-		}
-
-		if _, err := file.Seek(index.offsets[outputIndex], io.SeekStart); err != nil {
-			return currentOutputIndex, false, fmt.Errorf("seek search SOT %q: %w", path, err)
-		}
-		reader.Reset(file)
-		text, err := reader.ReadString('\n')
-		if len(text) > 0 {
-			text = strings.TrimSuffix(text, "\n")
-			if matcher.Match(text) {
-				return outputIndex, true, nil
-			}
-		}
-		if err != nil && err != io.EOF {
-			return currentOutputIndex, false, fmt.Errorf("read search SOT %q: %w", path, err)
-		}
-	}
-	return currentOutputIndex, false, nil
+func findRawSearchMatch(ctx context.Context, _ string, index fileLineIndex, matcher usecase.SearchMatcher, current int, direction usecase.SearchDirection) (int, bool, error) {
+	return index.filtered.Search(ctx, usecase.FilterRequest{Snapshot: index.snapshot}, usecase.CompiledFilter{}, matcher, current, direction)
 }
-
-func findFilteredSearchMatch(ctx context.Context, path string, filter usecase.CompiledFilter, matcher usecase.SearchMatcher, currentOutputIndex int, direction usecase.SearchDirection) (int, bool, error) {
-	if currentOutputIndex < 0 {
-		currentOutputIndex = 0
-	}
-
-	file, err := os.Open(path)
+func findFilteredSearchMatch(ctx context.Context, path string, filter usecase.CompiledFilter, matcher usecase.SearchMatcher, current int, direction usecase.SearchDirection) (int, bool, error) {
+	index, err := buildFileLineIndex(ctx, path)
 	if err != nil {
-		return currentOutputIndex, false, fmt.Errorf("open filtered search SOT %q: %w", path, err)
+		return current, false, err
 	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	outputIndex := 0
-	previousMatch := -1
-	for {
-		select {
-		case <-ctx.Done():
-			return currentOutputIndex, false, ctx.Err()
-		default:
-		}
-
-		text, err := reader.ReadString('\n')
-		if len(text) > 0 {
-			text = strings.TrimSuffix(text, "\n")
-			if filter.Match(text) {
-				if direction == usecase.SearchDirectionPrevious {
-					if outputIndex >= currentOutputIndex {
-						break
-					}
-					if matcher.Match(text) {
-						previousMatch = outputIndex
-					}
-				} else if outputIndex > currentOutputIndex && matcher.Match(text) {
-					return outputIndex, true, nil
-				}
-				outputIndex++
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return currentOutputIndex, false, fmt.Errorf("read filtered search SOT %q: %w", path, err)
-		}
-	}
-
-	if previousMatch >= 0 {
-		return previousMatch, true, nil
-	}
-	return currentOutputIndex, false, nil
+	return index.filtered.Search(ctx, usecase.FilterRequest{Snapshot: index.snapshot}, filter, matcher, current, direction)
 }
-
-func scanFilteredOutputWindow(ctx context.Context, path string, filter usecase.CompiledFilter, startOutputIndex int, capacity int) (filteredOutputWindow, error) {
-	if startOutputIndex < 0 {
-		startOutputIndex = 0
-	}
-	if capacity < 0 {
-		capacity = 0
-	}
-
-	file, err := os.Open(path)
+func scanFilteredOutputWindow(ctx context.Context, path string, filter usecase.CompiledFilter, start, capacity int) (filteredOutputWindow, error) {
+	index, err := buildFileLineIndex(ctx, path)
 	if err != nil {
-		return filteredOutputWindow{}, fmt.Errorf("open filtered SOT %q: %w", path, err)
+		return filteredOutputWindow{}, err
 	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	window := filteredOutputWindow{
-		records:          make([]usecase.OutputLogRecord, 0, capacity),
-		startOutputIndex: startOutputIndex,
-	}
-	var offset int64
-	for {
-		select {
-		case <-ctx.Done():
-			return filteredOutputWindow{}, ctx.Err()
-		default:
-		}
-
-		text, err := reader.ReadString('\n')
-		if len(text) > 0 {
-			window.totalRawLines++
-			offset += int64(len(text))
-			text = strings.TrimSuffix(text, "\n")
-			if filter.Match(text) {
-				outputIndex := window.totalMatches
-				if outputIndex >= startOutputIndex && len(window.records) < capacity {
-					window.records = append(window.records, usecase.OutputLogRecord{
-						RawLineNumber: window.totalRawLines,
-						Text:          text,
-					})
-				}
-				window.totalMatches++
-			}
-		}
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return filteredOutputWindow{}, fmt.Errorf("scan filtered SOT %q: %w", path, err)
-		}
-	}
-	window.fileSize = offset
-	return window, nil
+	return scanIndexedFilter(ctx, index, filter, start, capacity, 0)
+}
+func scanIndexedFilter(ctx context.Context, index fileLineIndex, filter usecase.CompiledFilter, start, capacity int, revision uint64) (filteredOutputWindow, error) {
+	w, err := index.filtered.ScanFilter(ctx, usecase.FilterRequest{Snapshot: index.snapshot, FilterRevision: revision, StartOutputIndex: start, Capacity: capacity}, filter)
+	return filteredOutputWindow{records: w.Records, startOutputIndex: w.Request.StartOutputIndex, totalMatches: w.TotalMatches, totalRawLines: w.TotalRawLines, fileSize: index.size}, err
 }

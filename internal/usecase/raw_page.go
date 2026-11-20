@@ -20,6 +20,8 @@ type PageMetadata struct {
 	ByteEnd            int64
 	FirstRawLineNumber int
 	RawLineCount       int
+	FirstRawLineOffset int64
+	EndsWithNewline    bool
 }
 
 type RawPage struct {
@@ -166,6 +168,9 @@ func (p *RawPagePipeline) ensureMetadataThrough(ctx context.Context, pageIndex i
 	}
 
 	for p.scanned.nextPageIndex <= pageIndex {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		data, meta, err := p.scanNextPage(ctx)
 		if err != nil {
 			return err
@@ -199,6 +204,7 @@ func (p *RawPagePipeline) scanNextPage(ctx context.Context) ([]byte, PageMetadat
 	lineCount := 0
 	if p.scanned.pageStartsLine && start < p.fileSize {
 		firstLine = p.scanned.nextLine
+		meta.FirstRawLineOffset = start
 		lineCount++
 		p.scanned.nextLine++
 	}
@@ -209,6 +215,7 @@ func (p *RawPagePipeline) scanNextPage(ctx context.Context) ([]byte, PageMetadat
 			if nextLineStart >= start && nextLineStart < end {
 				if lineCount == 0 {
 					firstLine = p.scanned.nextLine
+					meta.FirstRawLineOffset = nextLineStart
 				}
 				lineCount++
 				p.scanned.nextLine++
@@ -217,6 +224,7 @@ func (p *RawPagePipeline) scanNextPage(ctx context.Context) ([]byte, PageMetadat
 	}
 	meta.FirstRawLineNumber = firstLine
 	meta.RawLineCount = lineCount
+	meta.EndsWithNewline = len(data) > 0 && data[len(data)-1] == '\n'
 
 	p.scanned.nextPageIndex++
 	p.scanned.pageStartsLine = len(data) > 0 && data[len(data)-1] == '\n' && end < p.fileSize
@@ -282,4 +290,36 @@ func (p *RawPagePipeline) loadPage(ctx context.Context, pageIndex int) (RawPage,
 		return RawPage{}, fmt.Errorf("read raw page %d from %q: %w", pageIndex, p.source.Path(), err)
 	}
 	return RawPage{Metadata: meta, Data: data}, nil
+}
+
+// setSnapshot invalidates only the old tail page on append. Metadata for
+// immutable earlier pages survives raw data eviction.
+func (p *RawPagePipeline) setSnapshot(size int64, reset bool) {
+	start := 0
+	if p.fileSizeKnown && !reset && size >= p.fileSize && p.fileSize > 0 {
+		start = int((p.fileSize - 1) / int64(p.pageSize))
+	}
+	if !reset && p.fileSizeKnown {
+		start = min(start, p.scanned.nextPageIndex)
+	}
+	for i := range p.metadata {
+		if i >= start {
+			delete(p.metadata, i)
+		}
+	}
+	for i := range p.pages {
+		if i >= start {
+			delete(p.pages, i)
+		}
+	}
+	p.scanned = pageScanState{nextPageIndex: start, nextLine: 1, pageStartsLine: true}
+	for i := 0; i < start; i++ {
+		p.scanned.nextLine += p.metadata[i].RawLineCount
+	}
+	if start > 0 {
+		p.scanned.pageStartsLine = p.metadata[start-1].EndsWithNewline
+	}
+	p.fileSize = size
+	p.fileSizeKnown = true
+	p.totalPages = int((size + int64(p.pageSize) - 1) / int64(p.pageSize))
 }

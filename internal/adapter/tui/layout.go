@@ -2,6 +2,7 @@ package tui
 
 import (
 	"fmt"
+	"github.com/rivo/uniseg"
 	"io"
 	"sort"
 	"strconv"
@@ -53,6 +54,7 @@ type TextInputModel struct {
 }
 
 type LogLineModel struct {
+	WrapOffset    int
 	RawLineNumber int
 	Bookmark      int
 	Text          string
@@ -77,6 +79,7 @@ const (
 )
 
 type StatusModel struct {
+	Counting      bool
 	CursorRawLine int
 	TotalRawLines int
 
@@ -451,25 +454,7 @@ func mergedHighlightRanges(text string, ranges []usecase.HighlightRange) []useca
 		return nil
 	}
 
-	sort.Slice(clean, func(i, j int) bool {
-		if clean[i].Start == clean[j].Start {
-			return clean[i].End < clean[j].End
-		}
-		return clean[i].Start < clean[j].Start
-	})
-
-	merged := clean[:1]
-	for _, r := range clean[1:] {
-		last := &merged[len(merged)-1]
-		if r.Color == last.Color && r.Start <= last.End {
-			if r.End > last.End {
-				last.End = r.End
-			}
-			continue
-		}
-		merged = append(merged, r)
-	}
-	return merged
+	return usecase.ResolveHighlightRanges(clean)
 }
 
 var searchHighlightBackgrounds = map[string]string{
@@ -585,8 +570,12 @@ func statusFields(model StatusModel) []statusField {
 	bookmarks := append([]int(nil), model.Bookmarks...)
 	sort.Ints(bookmarks)
 
+	lineTotal := fmt.Sprintf("%d/%d", model.CursorRawLine, model.TotalRawLines)
+	if model.Counting {
+		lineTotal = fmt.Sprintf("%d/?", model.CursorRawLine)
+	}
 	fields := []statusField{
-		{key: "lines", value: fmt.Sprintf("%d/%d", model.CursorRawLine, model.TotalRawLines)},
+		{key: "lines", value: lineTotal},
 		{key: "in", value: fmt.Sprintf("%s:%s", defaultInputMode(model.InputMode), defaultReadState(model.ReadState))},
 		{key: "type", value: formatLogType(model.LogType, model.LogTypePending)},
 		{key: "follow", value: onOff(model.Follow)},
@@ -681,33 +670,28 @@ func cloneStatusFields(fields []statusField) []statusField {
 func longestPathValue(fields []statusField) int {
 	longest := 0
 	for _, field := range fields {
-		if field.isPath && len(field.value) > longest {
-			longest = len(field.value)
+		if field.isPath && uniseg.StringWidth(field.value) > longest {
+			longest = uniseg.StringWidth(field.value)
 		}
 	}
 	return longest
 }
 
 func abbreviateMiddle(value string, maxWidth int) string {
-	if maxWidth < 1 || len(value) <= maxWidth {
+	if maxWidth < 1 || uniseg.StringWidth(value) <= maxWidth {
 		return value
 	}
 	if maxWidth <= 3 {
-		return value[:maxWidth]
+		return truncateText(value, maxWidth)
 	}
-
 	keep := maxWidth - 3
 	left := keep / 2
 	right := keep - left
-	if right > len(value) {
-		right = len(value)
-	}
-	return value[:left] + "..." + value[len(value)-right:]
+	start, end := horizontalTextWindow(value, left, 0)
+	tail, _ := horizontalTextWindow(value, right, uniseg.StringWidth(value)-right)
+	return value[start:end] + "..." + value[tail:]
 }
-
-func fits(value string, width int) bool {
-	return width < 0 || len(value) <= width
-}
+func fits(value string, width int) bool { return width < 0 || uniseg.StringWidth(value) <= width }
 
 func formatInputLine(label string, input TextInputModel) string {
 	line := label + ":"
@@ -738,19 +722,7 @@ func formatEditingText(text string, cursorPos int) string {
 	return builder.String()
 }
 
-func truncateRunes(text string, width int) string {
-	if width < 0 {
-		return ""
-	}
-	count := 0
-	for index := range text {
-		if count == width {
-			return text[:index]
-		}
-		count++
-	}
-	return text
-}
+func truncateRunes(text string, width int) string { return truncateText(text, width) }
 
 func visualLogModels(logs []LogLineModel, height int, width int, wrap bool, horizontalOffset int) []LogLineModel {
 	if height <= 0 {
@@ -793,6 +765,9 @@ func visualLogModels(logs []LogLineModel, height int, width int, wrap bool, hori
 			segments = []textSegment{{start: 0, end: 0}}
 		}
 		for index, segment := range segments {
+			if log.Cursor && index < log.WrapOffset {
+				continue
+			}
 			next := log
 			next.Text = log.Text[segment.start:segment.end]
 			next.Highlights = intersectHighlightRanges(log.Highlights, segment.start, segment.end)
@@ -846,7 +821,7 @@ func MaxHorizontalOffset(logs []LogLineModel, width int) int {
 		if bodyWidth < 0 {
 			bodyWidth = 0
 		}
-		if offset := len(log.Text) - bodyWidth; offset > maxOffset {
+		if offset := uniseg.StringWidth(log.Text) - bodyWidth; offset > maxOffset {
 			maxOffset = offset
 		}
 	}
@@ -856,21 +831,32 @@ func MaxHorizontalOffset(logs []LogLineModel, width int) int {
 	return maxOffset
 }
 
-func horizontalTextWindow(text string, width int, offset int) (int, int) {
-	if width < 0 {
-		width = 0
+func horizontalTextWindow(text string, width, offset int) (int, int) {
+	offset = max(0, offset)
+	width = max(0, width)
+	g := uniseg.NewGraphemes(text)
+	cell := 0
+	start, end := len(text), len(text)
+	used := 0
+	for g.Next() {
+		a, b := g.Positions()
+		w := g.Width()
+		if cell < offset {
+			cell += w
+			continue
+		}
+		if start == len(text) {
+			start = a
+			end = a
+		}
+		if used+w > width {
+			break
+		}
+		used += w
+		end = b
+		cell += w
 	}
-	if offset < 0 {
-		offset = 0
-	}
-	if offset > len(text) {
-		offset = len(text)
-	}
-	end := offset + width
-	if end > len(text) {
-		end = len(text)
-	}
-	return offset, end
+	return start, end
 }
 
 func formatLogLines(logs []LogLineModel, height int) []string {
@@ -916,27 +902,37 @@ func splitTextByWidth(text string, width int) []textSegment {
 		return nil
 	}
 	if width <= 0 {
-		return []textSegment{{start: 0, end: len(text)}}
+		return []textSegment{{0, len(text)}}
 	}
-	segments := make([]textSegment, 0, (len(text)+width-1)/width)
-	for start := 0; start < len(text); start += width {
-		end := start + width
-		if end > len(text) {
-			end = len(text)
+	var out []textSegment
+	g := uniseg.NewGraphemes(text)
+	start, end, cells := 0, 0, 0
+	for g.Next() {
+		a, b := g.Positions()
+		w := g.Width()
+		if cells+w > width && end > start {
+			out = append(out, textSegment{start, end})
+			start = a
+			cells = 0
 		}
-		segments = append(segments, textSegment{start: start, end: end})
+		if w > width {
+			out = append(out, textSegment{a, a})
+			start = b
+			end = b
+			cells = 0
+			continue
+		}
+		end = b
+		cells += w
 	}
-	return segments
+	if end > start {
+		out = append(out, textSegment{start, end})
+	}
+	return out
 }
-
 func truncateText(text string, width int) string {
-	if width < 0 {
-		width = 0
-	}
-	if width >= len(text) {
-		return text
-	}
-	return text[:width]
+	a, b := horizontalTextWindow(text, width, 0)
+	return text[a:b]
 }
 
 func intersectHighlightRanges(ranges []usecase.HighlightRange, start int, end int) []usecase.HighlightRange {
@@ -1043,4 +1039,8 @@ func formatBookmarks(bookmarks []int) string {
 		values[i] = strconv.Itoa(bookmark)
 	}
 	return strings.Join(values, ",")
+}
+
+func WrappedRowCount(log LogLineModel, width int) int {
+	return max(1, len(splitTextByWidth(log.Text, max(1, width-len(plainLogPrefix(log))))))
 }

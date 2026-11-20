@@ -18,7 +18,7 @@ BUILD_LDFLAGS := $(strip $(GO_LDFLAGS) -X main.version=$(VERSION))
 .PHONY: help build publish-local run test test-once fmt fmt-check lint tidy clean version version-up
 
 help: ## Show available targets.
-	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\\n\\nTargets:\\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-12s %s\\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-12s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 build: $(VERSION_FILE) ## Build the logsee binary into bin/.
 	@mkdir -p $(BIN_DIR)
@@ -72,3 +72,10 @@ version-up: $(VERSION_FILE) ## Bump VERSION. Defaults to minor; set VERSION_PART
 
 clean: ## Remove generated build artifacts.
 	rm -rf $(BIN_DIR)
+
+.PHONY: verify benchmark
+verify: test-once lint build ## Run correctness checks and build.
+	$(GO) test -race $(GO_PACKAGES)
+
+benchmark: ## Measure 10MiB/100MiB/1GiB warm-cache source pipelines.
+	$(GO) test ./internal/adapter/app -run '^$$' -bench BenchmarkSourcePipeline -benchtime=1x

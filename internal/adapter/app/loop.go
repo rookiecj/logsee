@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"logsee/internal/adapter/tui"
 	"logsee/internal/port"
@@ -49,6 +50,8 @@ const (
 	loopEventCopy
 	loopEventShiftUp
 	loopEventShiftDown
+	loopEventShiftHome
+	loopEventShiftEnd
 	loopEventHorizontalLeft
 	loopEventHorizontalRight
 )
@@ -83,8 +86,20 @@ func runInteractiveLoop(ctx context.Context, session usecase.InputSession, sourc
 		refresh = stream.refresh
 		streamDone = stream.done
 	}
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 	for {
 		select {
+		case <-ticker.C:
+			changed, err := state.refreshFromSOT(ctx)
+			if err != nil {
+				return err
+			}
+			if changed {
+				if err := writeFrame(output, state.renderFrame()); err != nil {
+					return err
+				}
+			}
 		case <-ctx.Done():
 			return ctx.Err()
 		case _, ok := <-refresh:
@@ -352,6 +367,10 @@ func (s *loopState) handleLogListInput(ctx context.Context, input loopInput) (bo
 		s.moveNavigation(usecase.NavigationMoveDown)
 	case loopEventShiftUp:
 		s.moveNavigationWithSelection(usecase.NavigationMoveUp)
+	case loopEventShiftHome:
+		s.moveNavigationWithSelection(usecase.NavigationMoveHome)
+	case loopEventShiftEnd:
+		s.moveNavigationWithSelection(usecase.NavigationMoveEnd)
 	case loopEventShiftDown:
 		s.moveNavigationWithSelection(usecase.NavigationMoveDown)
 	case loopEventPageUp:
@@ -379,6 +398,7 @@ func (s *loopState) handleLogListInput(ctx context.Context, input loopInput) (bo
 		s.filterError = ""
 		s.focus = loopFocusFilterInput
 	case loopEventSearchInput:
+		s.clearSelectionMode()
 		s.searchEditingText = s.searchText
 		s.searchCursor = runeCount(s.searchEditingText)
 		s.focus = loopFocusSearchInput
@@ -388,13 +408,21 @@ func (s *loopState) handleLogListInput(ctx context.Context, input loopInput) (bo
 		return s.moveToSearchMatchOrReportBoundary(ctx, usecase.SearchDirectionPrevious), false
 	case loopEventWrapToggle:
 		s.wrap = !s.wrap
+		s.wrapOffset = 0
 	case loopEventHorizontalLeft:
 		return s.scrollHorizontal(-1), false
 	case loopEventHorizontalRight:
 		return s.scrollHorizontal(1), false
 	case loopEventSpacePick:
-		if s.cursorRawLine() >= 1 {
-			s.selection.PickCursorOrRange(s.cursorRawLine())
+		if s.background && s.pendingSelect {
+			s.intentRevision++
+			s.pendingRangeActive = false
+			s.selection.ClearRange()
+			s.pendingSelectionOps = append(s.pendingSelectionOps, selectionOperation{Kind: selectionToggle, Output: s.navigation.CursorOutputIndex()})
+		} else if s.cursorRawLine() >= 1 {
+			s.intentRevision++
+			s.selection.ClearRange()
+			s.selection.TogglePicked(s.cursorRawLine())
 			s.syncSelectionMode()
 		}
 	case loopEventCopy:
@@ -411,7 +439,18 @@ func (s *loopState) handleLogListInput(ctx context.Context, input loopInput) (bo
 }
 
 func (s *loopState) moveNavigation(move usecase.NavigationMove) {
+	s.pendingRangeActive = false
+	if s.pendingSelect {
+		s.pendingSelectionOps = append(s.pendingSelectionOps, selectionOperation{Kind: selectionClearRange})
+	}
+	if s.wrap && s.moveWithinWrappedLine(move) {
+		return
+	}
+	before := s.navigation.CursorOutputIndex()
 	s.navigation.Move(move)
+	if before != s.navigation.CursorOutputIndex() {
+		s.wrapOffset = 0
+	}
 	s.selection.ClearRange()
 	s.syncSelectionMode()
 }
@@ -422,14 +461,44 @@ func (s *loopState) moveNavigationWithSelection(move usecase.NavigationMove) {
 		return
 	}
 	anchor := s.cursorRawLine()
+	anchorOutput := s.navigation.CursorOutputIndex()
+	if s.pendingSelect && s.pendingRangeActive {
+		anchor = s.pendingAnchor
+		anchorOutput = s.pendingAnchorOutput
+	}
 	if rawRange, hasRange := s.selection.Range(); hasRange {
 		anchor = rawRange.Start
 	}
 	s.navigation.Move(move)
+	if s.background {
+		s.pendingSelect = true
+		s.pendingRangeActive = true
+		s.pendingAnchor = anchor
+		s.pendingAnchorOutput = anchorOutput
+		s.pendingSelectionOps = append(s.pendingSelectionOps, selectionOperation{Kind: selectionExtend, AnchorRaw: anchor, AnchorOutput: anchorOutput, Output: s.navigation.CursorOutputIndex()})
+		return
+	}
+	if _, err := s.refreshFromSOT(context.Background()); err != nil {
+		s.setPersistentRuntimeMessage(err.Error())
+		return
+	}
 	cursor := s.cursorRawLine()
 	if anchor >= 1 && cursor >= 1 {
 		s.selection.StartOrUpdateRange(anchor, cursor)
-		s.selection.PickRecordRange(s.records, anchor, cursor)
+		if s.lineIndex != nil {
+			first, last := min(anchor, cursor), max(anchor, cursor)
+			err := (selectedFileLines{s.sourcePath, *s.lineIndex}).WalkLines(context.Background(), first, last, func(n int, text string) error {
+				if s.filter.Match(text) && !s.selection.IsPicked(n) {
+					s.selection.TogglePicked(n)
+				}
+				return nil
+			})
+			if err != nil {
+				s.setPersistentRuntimeMessage(err.Error())
+			}
+		} else {
+			s.selection.PickRecordRange(s.records, anchor, cursor)
+		}
 	}
 	s.syncSelectionMode()
 }
@@ -495,6 +564,10 @@ func (s *loopState) scrollHelp(delta int) {
 }
 
 func (s *loopState) popMode() bool {
+	s.intentRevision++
+	s.pendingSelect = false
+	s.pendingSelectionOps = nil
+	s.pendingSearch = false
 	if len(s.modeStack) == 0 {
 		if s.selection.HasSelection() {
 			s.clearSelectionMode()
@@ -529,11 +602,18 @@ func (s *loopState) syncSelectionMode() {
 }
 
 func (s *loopState) clearSelectionMode() {
+	s.intentRevision++
+	s.pendingSearch = false
+	s.pendingSelect = false
+	s.pendingSelectionOps = nil
+	s.pendingCopy = false
 	s.selection.Clear()
 	s.removeMode(loopModeSelection)
 }
 
 func (s *loopState) clearSearchMode() {
+	s.intentRevision++
+	s.pendingSearch = false
 	s.searchText = ""
 	s.searchEditingText = ""
 	s.removeMode(loopModeSearch)
@@ -560,13 +640,28 @@ func (s *loopState) scrollHorizontal(delta int) bool {
 }
 
 func (s *loopState) copySelection(ctx context.Context) {
-	result := usecase.CopySelectedLines(ctx, s.clipboard, s.records, s.selection, s.cursorRawLine())
+	if s.background {
+		s.pendingCopy = true
+		return
+	}
+	var result usecase.CopyTextResult
+	if s.lineIndex != nil {
+		result = usecase.CopySelectedFromSource(ctx, s.clipboard, selectedFileLines{s.sourcePath, *s.lineIndex}, s.filter, s.selection, s.cursorRawLine())
+	} else {
+		result = usecase.CopySelectedLines(ctx, s.clipboard, s.records, s.selection, s.cursorRawLine())
+	}
 	s.setTransientRuntimeMessage(result.Message)
 }
 
 func (s *loopState) moveToSearchMatch(ctx context.Context, direction usecase.SearchDirection) bool {
 	if strings.TrimSpace(s.searchText) == "" {
 		return false
+	}
+	if s.background {
+		s.pendingSearch = true
+		s.selection.ClearRange()
+		s.pendingDirection = direction
+		return true
 	}
 	matcher := usecase.NewSearchMatcher(s.searchText)
 	if s.fileWindowActive() && s.lineIndex != nil {
@@ -581,7 +676,7 @@ func (s *loopState) moveToSearchMatch(ctx context.Context, direction usecase.Sea
 		return s.moveToOutputIndex(target)
 	}
 	if s.filteredWindowActive() {
-		target, moved, err := findFilteredSearchMatch(ctx, s.sourcePath, s.filter, matcher, s.navigation.CursorOutputIndex(), direction)
+		target, moved, err := s.lineIndex.filtered.Search(ctx, usecase.FilterRequest{Snapshot: s.lineIndex.snapshot, FilterRevision: s.filterRevision}, s.filter, matcher, s.navigation.CursorOutputIndex(), direction)
 		if err != nil {
 			s.setPersistentRuntimeMessage(fmt.Sprintf("search SOT: %v", err))
 			return true
@@ -757,6 +852,10 @@ func namedLoopEvent(token string) loopEvent {
 		return loopEventEnter
 	case "<ShiftUp>":
 		return loopEventShiftUp
+	case "<ShiftHome>":
+		return loopEventShiftHome
+	case "<ShiftEnd>":
+		return loopEventShiftEnd
 	case "<ShiftDown>":
 		return loopEventShiftDown
 	case "<PageUp>":
@@ -847,4 +946,37 @@ func dropLastRune(text string) string {
 		last = index
 	}
 	return text[:last]
+}
+
+func (s *loopState) moveWithinWrappedLine(move usecase.NavigationMove) bool {
+	delta := 0
+	switch move {
+	case usecase.NavigationMoveDown:
+		delta = 1
+	case usecase.NavigationMoveUp:
+		delta = -1
+	case usecase.NavigationMovePageDown:
+		delta = max(1, s.listHeight-1)
+	case usecase.NavigationMovePageUp:
+		delta = -max(1, s.listHeight-1)
+	default:
+		return false
+	}
+	rows := 1
+	for _, log := range s.visibleLogLines() {
+		if log.Cursor {
+			rows = tui.WrappedRowCount(log, s.width)
+			break
+		}
+	}
+	next := max(0, min(rows-1, s.wrapOffset+delta))
+	if next == s.wrapOffset {
+		return false
+	}
+	s.wrapOffset = next
+	nav, _ := usecase.NewNavigationState(usecase.NavigationOptions{OutputCount: s.outputCount(), ViewportHeight: s.listHeight, CursorOutputIndex: s.navigation.CursorOutputIndex(), ScrollOffset: s.navigation.ScrollOffset(), Follow: false})
+	s.navigation = nav
+	s.selection.ClearRange()
+	s.syncSelectionMode()
+	return true
 }

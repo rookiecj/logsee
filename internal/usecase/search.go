@@ -1,6 +1,10 @@
 package usecase
 
-import "strings"
+import (
+	"container/heap"
+	"sort"
+	"strings"
+)
 
 type SearchFocus int
 
@@ -130,7 +134,12 @@ func NewSearchMatcher(input string) SearchMatcher {
 }
 
 func (m SearchMatcher) Match(line string) bool {
-	return len(m.HighlightRanges(line)) > 0
+	for _, token := range m.tokens {
+		if token.Text != "" && strings.Contains(line, token.Text) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m SearchMatcher) HighlightRanges(line string) []HighlightRange {
@@ -267,34 +276,56 @@ func isSearchSpace(b byte) bool {
 	return b == ' ' || b == '\t'
 }
 
-func mergeHighlightRanges(ranges []HighlightRange) []HighlightRange {
-	if len(ranges) == 0 {
-		return nil
+// ResolveHighlightRanges partitions overlaps; the first supplied range wins.
+func ResolveHighlightRanges(ranges []HighlightRange) []HighlightRange {
+	type event struct {
+		pos, id int
+		start   bool
 	}
-
-	sortHighlightRanges(ranges)
-	merged := []HighlightRange{ranges[0]}
-	for _, current := range ranges[1:] {
-		last := &merged[len(merged)-1]
-		if current.Color == last.Color && current.Start <= last.End {
-			if current.End > last.End {
-				last.End = current.End
+	events := make([]event, 0, 2*len(ranges))
+	for id, r := range ranges {
+		if r.Start < r.End {
+			events = append(events, event{r.Start, id, true}, event{r.End, id, false})
+		}
+	}
+	sort.Slice(events, func(i, j int) bool { return events[i].pos < events[j].pos })
+	active := make([]bool, len(ranges))
+	h := &highlightHeap{}
+	var out []HighlightRange
+	for i := 0; i < len(events); {
+		pos := events[i].pos
+		for i < len(events) && events[i].pos == pos {
+			e := events[i]
+			active[e.id] = e.start
+			if e.start {
+				heap.Push(h, e.id)
 			}
+			i++
+		}
+		for h.Len() > 0 && !active[(*h)[0]] {
+			heap.Pop(h)
+		}
+		if i == len(events) || h.Len() == 0 {
 			continue
 		}
-		merged = append(merged, current)
+		next := events[i].pos
+		color := ranges[(*h)[0]].Color
+		if len(out) > 0 && out[len(out)-1].End == pos && out[len(out)-1].Color == color {
+			out[len(out)-1].End = next
+		} else {
+			out = append(out, HighlightRange{pos, next, color})
+		}
 	}
-	return merged
+	return out
+}
+func mergeHighlightRanges(ranges []HighlightRange) []HighlightRange {
+	return ResolveHighlightRanges(ranges)
 }
 
-func sortHighlightRanges(ranges []HighlightRange) {
-	for i := 1; i < len(ranges); i++ {
-		current := ranges[i]
-		j := i - 1
-		for j >= 0 && ranges[j].Start > current.Start {
-			ranges[j+1] = ranges[j]
-			j--
-		}
-		ranges[j+1] = current
-	}
-}
+type highlightHeap []int
+
+func (h highlightHeap) Len() int           { return len(h) }
+func (h highlightHeap) Less(i, j int) bool { return h[i] < h[j] }
+func (h highlightHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *highlightHeap) Push(v any)        { *h = append(*h, v.(int)) }
+func (h *highlightHeap) Pop() any          { old := *h; n := len(old); v := old[n-1]; *h = old[:n-1]; return v }
