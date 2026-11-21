@@ -11,7 +11,8 @@ python3 testdata/pty_smoke.py /tmp/logsee-app.test
 
 The PTY test uses a temporary home directory and an injected clipboard writer. It
 checks file and live pipe input, UTF-8, copy outside the viewport, search editing,
-help, resize, quit, raw stdio preservation and terminal restoration. It answers
+help, resize, Ctrl+C shutdown, raw stdio preservation and terminal restoration.
+It also checks that pressing q leaves the viewer running. It answers
 terminal color/cursor queries so initialization does not depend on a terminal
 emulator. It does not write the desktop clipboard or the user's input history.
 

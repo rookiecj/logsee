@@ -99,7 +99,7 @@ func TestRunUsesTTYInputForPipedStdioBubbleTea(t *testing.T) {
 		&stderr,
 		commandDeps{
 			openTTY: func() (io.ReadCloser, error) {
-				return io.NopCloser(strings.NewReader("q")), nil
+				return io.NopCloser(strings.NewReader("\x03")), nil
 			},
 			runApp: func(ctx context.Context, options cli.Options, stdin io.Reader, stdout io.Writer, runOptions app.RunOptions) error {
 				captured = runOptions
@@ -123,7 +123,7 @@ func TestRunUsesTTYInputForPipedStdioBubbleTea(t *testing.T) {
 	if !captured.UseBubbleTea {
 		t.Fatal("UseBubbleTea = false, want command path to use Bubble Tea")
 	}
-	if capturedKeys != "q" {
+	if capturedKeys != "\x03" {
 		t.Fatalf("captured key input = %q, want /dev/tty input", capturedKeys)
 	}
 }

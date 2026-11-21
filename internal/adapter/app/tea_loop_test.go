@@ -42,6 +42,53 @@ func TestTeaKeyToLoopInputTreatsQuestionRuneAsText(t *testing.T) {
 	}
 }
 
+func TestTeaLoopQuitsWithCtrlCInEveryView(t *testing.T) {
+	logPath := writeLoopLog(t, "one\ntwo\n")
+	for _, tt := range []struct {
+		name    string
+		focus   loopFocus
+		help    bool
+		history bool
+	}{
+		{name: "list", focus: loopFocusLogList},
+		{name: "filter", focus: loopFocusFilterInput},
+		{name: "search", focus: loopFocusSearchInput},
+		{name: "help", help: true},
+		{name: "filter history", focus: loopFocusFilterInput, history: true},
+		{name: "search history", focus: loopFocusSearchInput, history: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			session := usecase.InputSession{Mode: usecase.InputModeFile, SOTPath: logPath}
+			state, err := newLoopState(context.Background(), session, logPath, usecase.LogTypePlain, 120, 10, unboundedRecordLimit, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			state.focus, state.helpOpen, state.historyPickerOpen = tt.focus, tt.help, tt.history
+			model := teaLoopModel{ctx: context.Background(), state: state}
+			updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+			if cmd != nil {
+				t.Fatal("q must leave the viewer running")
+			}
+			model = updated.(teaLoopModel)
+			if !tt.help && !tt.history {
+				if tt.focus == loopFocusFilterInput && model.state.filterEditingText != "q" {
+					t.Fatal("q must remain editable filter text")
+				}
+				if tt.focus == loopFocusSearchInput && model.state.searchEditingText != "q" {
+					t.Fatal("q must remain editable search text")
+				}
+			}
+			_, cmd = model.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+			if cmd == nil {
+				t.Fatal("Ctrl+C must quit the viewer")
+			}
+			if _, ok := cmd().(tea.QuitMsg); !ok {
+				t.Fatal("Ctrl+C did not request a normal shutdown")
+			}
+		})
+	}
+}
+
 func TestTeaKeyToLoopInputMapsShiftArrowsToRangeSelection(t *testing.T) {
 	tests := []struct {
 		name string

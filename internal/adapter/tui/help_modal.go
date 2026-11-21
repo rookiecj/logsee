@@ -14,7 +14,7 @@ func helpContentLines() []string {
 		"Selection: Shift+Up/Down/Home/End extend range; Space pick line; c copy",
 		"Modes: Esc pops search/selection stack; help open Esc closes help only",
 		"Help: F1 from any focus; ? from log list; Esc/F1/? close help",
-		"Quit: q on log list; Ctrl+C anywhere",
+		"Quit: Ctrl+C anywhere",
 	}
 }
 

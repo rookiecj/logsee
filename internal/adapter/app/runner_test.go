@@ -129,7 +129,7 @@ func TestRunInteractiveUsesBubbleTeaRuntimeWhenRequested(t *testing.T) {
 	stdout := frameSignalWriter{ready: make(chan struct{}), needle: "second"}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	keys := &scriptedReader{data: []byte("q"), before: map[int]func() error{0: func() error {
+	keys := &scriptedReader{data: []byte("\x03"), before: map[int]func() error{0: func() error {
 		select {
 		case <-stdout.ready:
 			return nil

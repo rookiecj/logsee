@@ -17,7 +17,6 @@ type loopEvent int
 
 const (
 	loopEventUnknown loopEvent = iota
-	loopEventQuit
 	loopEventCtrlC
 	loopEventUp
 	loopEventDown
@@ -260,9 +259,6 @@ func (s *loopState) handleFilterInput(input loopInput) bool {
 	switch input.event {
 	case loopEventEnter:
 		return s.applyFilterEditingText()
-	case loopEventQuit:
-		s.filterEditingText, s.filterCursor = insertTextAtCursor(s.filterEditingText, s.filterCursor, input.text)
-		s.filterError = ""
 	case loopEventEsc:
 		s.filterEditingText = s.filterText
 		s.filterCursor = runeCount(s.filterEditingText)
@@ -309,8 +305,6 @@ func (s *loopState) handleSearchInput(input loopInput) bool {
 	switch input.event {
 	case loopEventEnter:
 		return s.applySearchEditingText()
-	case loopEventQuit:
-		s.searchEditingText, s.searchCursor = insertTextAtCursor(s.searchEditingText, s.searchCursor, input.text)
 	case loopEventEsc:
 		s.searchEditingText = s.searchText
 		s.searchCursor = runeCount(s.searchEditingText)
@@ -359,8 +353,6 @@ func (s *loopState) handleSearchInput(input loopInput) bool {
 
 func (s *loopState) handleLogListInput(ctx context.Context, input loopInput) (bool, bool) {
 	switch input.event {
-	case loopEventQuit:
-		return false, true
 	case loopEventUp:
 		s.moveNavigation(usecase.NavigationMoveUp)
 	case loopEventDown:
@@ -883,8 +875,6 @@ func byteLoopInput(b byte) loopInput {
 		return eventLoopInput(loopEventEnter)
 	case 0x7f, 0x08:
 		return eventLoopInput(loopEventBackspace)
-	case 'q':
-		return loopInput{event: loopEventQuit, text: string(b)}
 	case 'j':
 		return loopInput{event: loopEventDown, text: string(b)}
 	case 'k':

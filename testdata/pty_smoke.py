@@ -56,6 +56,8 @@ def run_case(stream):
                 os.write(master,b'/');wait('> _')
                 os.write(master,b'error#red err#green\r')
                 for _ in range(8):pump()
+                os.write(master,b'q')
+                for _ in range(8):pump()
                 os.write(master,b'?');wait('Movement:')
                 os.write(master,b'\x1b[6~');wait('Selection:')
                 os.write(master,b'\x1b')

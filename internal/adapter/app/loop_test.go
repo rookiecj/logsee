@@ -23,7 +23,7 @@ func TestInteractiveLoopRendersUntilQuit(t *testing.T) {
 	logPath := writeLoopLog(t, "one\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("\x03"), &stdout, RunOptions{
 		Width:       160,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -46,7 +46,7 @@ func TestInteractiveLoopNavigationRedrawsCursorStatus(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("jGq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("jG\x03"), &stdout, RunOptions{
 		Width:       180,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -73,7 +73,7 @@ func TestInteractiveLoopBookmarksAndJump(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("jmj1q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("jmj1\x03"), &stdout, RunOptions{
 		Width:       180,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -100,7 +100,7 @@ func TestInteractiveLoopNamedNavigationKeys(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\nfour\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("G<Home><End>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("G<Home><End>\x03"), &stdout, RunOptions{
 		Width:       180,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -127,7 +127,7 @@ func TestInteractiveLoopNavigatesBeyondDefaultOutputCacheCapacity(t *testing.T) 
 	logPath := writeLoopLog(t, numberedLogLines(lineCount))
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("Gq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("G\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -405,7 +405,7 @@ func TestInteractiveLoopHelpOpensAndClosesWithoutMovingCursor(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("<F1><Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("<F1><Esc>\x03"), &stdout, RunOptions{
 		Width:       160,
 		Height:      12,
 		HomeDir:     t.TempDir(),
@@ -428,7 +428,7 @@ func TestInteractiveLoopHelpScrollsInOverlayViewport(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("<F1>jjj<Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("<F1>jjj<Esc>\x03"), &stdout, RunOptions{
 		Width:       80,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -451,7 +451,7 @@ func TestInteractiveLoopQuestionMarkOpensHelpFromLogList(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("?<End><Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("?<End><Esc>\x03"), &stdout, RunOptions{
 		Width:       160,
 		Height:      12,
 		HomeDir:     t.TempDir(),
@@ -535,7 +535,7 @@ func TestInteractiveLoopRuntimeFilterAppliesOnEnter(t *testing.T) {
 	logPath := writeLoopLog(t, "info ready\nerror database\ndebug done\nerror timeout\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":error\nq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":error\n\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -606,7 +606,7 @@ func TestInteractiveLoopFilterEscCancelsEditingAndPreservesAppliedFilter(t *test
 	logPath := writeLoopLog(t, "info ready\nerror database\ndebug done\nerror timeout\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":error\n:debug<Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":error\n:debug<Esc>\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -745,7 +745,7 @@ func TestInteractiveLoopPersistsHistoryAcrossRuns(t *testing.T) {
 	home := t.TempDir()
 
 	var first bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":timeout\nq"), &first, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":timeout\n\x03"), &first, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     home,
@@ -756,7 +756,7 @@ func TestInteractiveLoopPersistsHistoryAcrossRuns(t *testing.T) {
 	}
 
 	var second bytes.Buffer
-	err = Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("q"), &second, RunOptions{
+	err = Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("\x03"), &second, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     home,
@@ -777,7 +777,7 @@ func TestInteractiveLoopPersistsSearchHistoryAcrossRuns(t *testing.T) {
 	home := t.TempDir()
 
 	var first bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/ready\nq"), &first, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/ready\n\x03"), &first, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     home,
@@ -788,7 +788,7 @@ func TestInteractiveLoopPersistsSearchHistoryAcrossRuns(t *testing.T) {
 	}
 
 	var second bytes.Buffer
-	err = Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("q"), &second, RunOptions{
+	err = Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("\x03"), &second, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     home,
@@ -860,7 +860,7 @@ func TestInteractiveLoopRuntimeSearchAppliesOnEnter(t *testing.T) {
 	logPath := writeLoopLog(t, "idle ready\ntimeout database\nstill visible\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\nq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\n\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -888,7 +888,7 @@ func TestInteractiveLoopCopyCurrentLineWritesClipboardAndStatus(t *testing.T) {
 	clipboard := &fakeLoopClipboard{}
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("jcq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("jc\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -913,7 +913,7 @@ func TestInteractiveLoopSpacePickCopiesPickedLines(t *testing.T) {
 	clipboard := &fakeLoopClipboard{}
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(" jj cq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(" jj c\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1059,7 +1059,7 @@ func TestInteractiveLoopCopyKeyInFilterInputEditsTextAndDoesNotWriteClipboard(t 
 	clipboard := &fakeLoopClipboard{}
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":c\nq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":c\n\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1115,7 +1115,7 @@ func TestInteractiveLoopSearchEscCancelsEditingAndPreservesAppliedSearch(t *test
 	logPath := writeLoopLog(t, "idle ready\ntimeout database\nstill visible\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\n/nope<Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\n/nope<Esc>\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -1138,7 +1138,7 @@ func TestInteractiveLoopModeStackEscPopsSelectionThenSearch(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/two\nj<ShiftDown><Esc><Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/two\nj<ShiftDown><Esc><Esc>\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1163,7 +1163,7 @@ func TestInteractiveLoopSearchEntryClearsSelection(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("j<ShiftDown>/two\n<Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("j<ShiftDown>/two\n<Esc>\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1190,7 +1190,7 @@ func TestInteractiveLoopModeStackSecondEscClearsRemainingSelection(t *testing.T)
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("j<ShiftDown>/two\n<Esc><Esc>q"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("j<ShiftDown>/two\n<Esc><Esc>\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1215,7 +1215,7 @@ func TestInteractiveLoopSearchNavigationMovesThroughFilteredMatchesWithoutWrappi
 	logPath := writeLoopLog(t, "timeout first\nidle\nmatch timeout second\nidle\nmatch timeout third\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\nnnpppq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/timeout\nnnppp\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -1277,7 +1277,7 @@ func TestInteractiveLoopFileSearchFindsNextMatchOutsideVisibleWindow(t *testing.
 	}, "\n"))
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/target\nnq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/target\nn\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1314,7 +1314,7 @@ func TestInteractiveLoopFileSearchFindsPreviousMatchOutsideVisibleWindow(t *test
 	}, "\n"))
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("G/target\npq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("G/target\np\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1343,7 +1343,7 @@ func TestInteractiveLoopFilteredFileSearchFindsNextMatchOutsideCachedWindow(t *t
 	logPath := writeLoopLog(t, matchingLogLinesWithTarget(lineCount, "keep", lineCount))
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":keep\n/target\nnq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":keep\n/target\nn\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1372,7 +1372,7 @@ func TestInteractiveLoopFilteredFileSearchFindsPreviousMatchOutsideCachedWindow(
 	logPath := writeLoopLog(t, matchingLogLinesWithTarget(lineCount, "keep", 2))
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":keep\nG/target\npq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":keep\nG/target\np\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1401,7 +1401,7 @@ func TestInteractiveLoopWrapToggleRendersWrappedRowsAndStatus(t *testing.T) {
 	logPath := writeLoopLog(t, longLine+"\nsecond\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("wq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("w\x03"), &stdout, RunOptions{
 		Width:       80,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1428,7 +1428,7 @@ func TestInteractiveLoopHorizontalScrollRightAndLeftWhenWrapOff(t *testing.T) {
 	logPath := writeLoopLog(t, "abcdefghij\nsecond\nxy\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("llhq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("llh\x03"), &stdout, RunOptions{
 		Width:       10,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1457,7 +1457,7 @@ func TestInteractiveLoopHorizontalScrollIgnoredWhenWrapOn(t *testing.T) {
 	logPath := writeLoopLog(t, "abcdefghij\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("wlq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("wl\x03"), &stdout, RunOptions{
 		Width:       10,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1535,7 +1535,7 @@ func TestInteractiveLoopHorizontalScrollKeysInFilterAndSearchInputEditText(t *te
 	logPath := writeLoopLog(t, "hl value\nother\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":hl\n/hl\nq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":hl\n/hl\n\x03"), &stdout, RunOptions{
 		Width:       40,
 		Height:      8,
 		HomeDir:     t.TempDir(),
@@ -1561,7 +1561,7 @@ func TestInteractiveLoopWrapKeyInFilterInputEditsTextInsteadOfToggling(t *testin
 	logPath := writeLoopLog(t, "w value\nother\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":w\nq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader(":w\n\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1590,7 +1590,7 @@ func TestInteractiveLoopWrapKeyInSearchInputEditsTextInsteadOfToggling(t *testin
 	logPath := writeLoopLog(t, "w value\nother\n")
 
 	var stdout bytes.Buffer
-	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/w\nq"), &stdout, RunOptions{
+	err := Run(context.Background(), cli.Options{InputPath: logPath}, strings.NewReader("/w\n\x03"), &stdout, RunOptions{
 		Width:       220,
 		Height:      6,
 		HomeDir:     t.TempDir(),
@@ -1621,7 +1621,7 @@ func TestRunInteractiveSTDIOStreamsNewLinesThroughSOTBeforeRedraw(t *testing.T) 
 	var stdout frameSignalWriter
 	stdout.ready = make(chan struct{})
 	keyInput := &scriptedReader{
-		data: []byte("q"),
+		data: []byte("\x03"),
 		before: map[int]func() error{
 			0: func() error {
 				stdin.WriteString("alpha\nbeta\n")
@@ -1725,7 +1725,7 @@ func TestRunInteractiveSTDIOWithDefaultKeyInputWaitsForStreamEOFAndFinalRefresh(
 func TestInteractiveLoopRefreshWithFollowOnPinsToNewestOutputLine(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\n")
 	keyInput := &scriptedReader{
-		data: []byte("GGq"),
+		data: []byte("GG\x03"),
 		before: map[int]func() error{
 			1: func() error {
 				return appendToLoopLog(logPath, "four\nfive\n")
@@ -1760,7 +1760,7 @@ func TestInteractiveLoopRefreshWithFollowOnPinsToNewestOutputLine(t *testing.T) 
 func TestInteractiveLoopRefreshWithFollowOffPreservesViewportAndCursor(t *testing.T) {
 	logPath := writeLoopLog(t, "one\ntwo\nthree\nfour\nfive\n")
 	keyInput := &scriptedReader{
-		data: []byte("Gkq"),
+		data: []byte("Gk\x03"),
 		before: map[int]func() error{
 			1: func() error {
 				return appendToLoopLog(logPath, "six\nseven\n")
